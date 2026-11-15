@@ -1,0 +1,62 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Python ${{ matrix.python }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        include:
+          - os: windows-latest
+            python: "3.13"
+          - os: macos-latest
+            python: "3.13"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          allow-prereleases: true
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[subdoc]" pytest
+      - name: Unit tests
+        run: python -m pytest
+
+  examples:
+    name: Example scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install
+        run: python -m pip install -e ".[subdoc]"
+      - name: Render the invoice example
+        if: hashFiles('examples/invoice/render.py') != ''
+        run: python examples/invoice/render.py
+      - name: Run the feature scripts in tests/
+        working-directory: tests
+        run: |
+          mkdir -p output
+          failed=0
+          for f in [A-Za-z]*.py; do
+            [ "$f" = runtests.py ] && continue
+            echo "::group::$f"
+            python "$f" || { echo "::error::$f failed"; failed=1; }
+            echo "::endgroup::"
+          done
+          exit $failed
