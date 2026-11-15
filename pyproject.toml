@@ -50,19 +50,6 @@ Repository = "https://github.com/cvas22/docform"
 Issues = "https://github.com/cvas22/docform/issues"
 Changelog = "https://github.com/cvas22/docform/blob/main/CHANGES.rst"
 
-[tool.poetry]
-version = "0.0.0"
-
-[tool.poetry.requires-plugins]
-poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
-
-[tool.poetry-dynamic-versioning]
-enable = true
-
-[tool.poetry-dynamic-versioning.from-file]
-source = "docform/__init__.py"
-pattern = '__version__ = "(.+)"'
-
 [tool.pytest.ini_options]
 testpaths = ["tests/unit"]
 pythonpath = ["."]
@@ -73,7 +60,7 @@ pretty = true
 python_version = "3.9"
 check_untyped_defs = true
 warn_unused_ignores = true
-exclude = ["docs", "build", "setup.py"]
+exclude = ["docs", "build"]
 
 [[tool.mypy.overrides]]
 module = ["docxcompose.*"]

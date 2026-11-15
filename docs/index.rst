@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Welcome to Docform's documentation!
-================================================
+===================================
 
 .. rubric:: Quickstart
 
@@ -488,28 +488,20 @@ See tests/module_execute.py for an example.
 Examples
 --------
 
-The best way to see how it works is to read examples, they are located in `tests/` directory.
-Docx test templates are in `tests/templates/`. To generate final docx files::
+Complete, runnable examples are in the `examples/` directory, for instance::
+
+   python examples/invoice/render.py
+
+The `tests/` directory has a small script for every feature, with templates in
+`tests/templates/`. To render them all into `tests/output/`::
 
    cd tests/
    python runtests.py
 
-Generated files are located in `tests/output` directory.
+The unit tests run with pytest from the repository root::
 
-If you are not sure about your python environment, Docform provides Pipfiles
-for that::
-
-   pip install pipenv (if not already done)
-   cd docform (where Pipfiles are)
-   pipenv install --python 3.6 -d
-   pipenv shell
-   cd tests/
-   python runtests.py
-
-Share
------
-
-
+   pip install -e ".[subdoc]" pytest
+   pytest
 
 .. rubric:: Functions index
 
