@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-docform: fill document templates with data.
+Docform: fill document templates with data.
 
 Based on python-docx-template by Eric Lapouyade.
 """

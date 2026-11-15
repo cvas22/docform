@@ -1,11 +1,11 @@
-# docform
+# Docform
 
 [![Python](https://img.shields.io/badge/python-3.7%2B-blue)](pyproject.toml)
 [![License: LGPL-2.1](https://img.shields.io/badge/license-LGPL--2.1-green)](LICENSE.txt)
 
 **Fill document templates with data.**
 
-Design the document in Word with whatever layout, styles, headers and images you need, and put [Jinja2](https://jinja.palletsprojects.com/) tags where the data goes. docform renders it into a finished `.docx`, so you can generate contracts, invoices, reports, certificates and letters in bulk from Python.
+Design the document in Word with whatever layout, styles, headers and images you need, and put [Jinja2](https://jinja.palletsprojects.com/) tags where the data goes. Docform renders it into a finished `.docx`, so you can generate contracts, invoices, reports, certificates and letters in bulk from Python.
 
 ## Install
 
@@ -50,7 +50,7 @@ Everything you set up in Word, like fonts, logos and page layout, stays intact. 
 
 ```mermaid
 flowchart LR
-    T["Word template<br/>(.docx with Jinja2 tags)"] --> R{{"docform<br/>render()"}}
+    T["Word template<br/>(.docx with Jinja2 tags)"] --> R{{"Docform<br/>render()"}}
     D["Your data<br/>(dict, JSON, database rows)"] --> R
     R --> O["Finished document<br/>(.docx)"]
 ```
@@ -72,7 +72,7 @@ This invoice comes from [`examples/invoice`](examples/invoice). The template on 
 
 A few things to notice in the template:
 
-- `{%tr for item in items %}` and `{%tr endfor %}` sit in their own table rows. docform repeats the row between them once per item and removes the tag rows.
+- `{%tr for item in items %}` and `{%tr endfor %}` sit in their own table rows. Docform repeats the row between them once per item and removes the tag rows.
 - `{%p if paid %}` works the same way for paragraphs, so the payment note switches between "PAID" and a reminder.
 - Formatting on a tag, like the bold blue `{{ total }}`, carries over to the value.
 
@@ -120,15 +120,15 @@ The full template syntax and API reference are in [`docs/`](docs/index.rst). [`e
 
 ## Adopters
 
-Using docform in production or in an open source project? Add yourself to [ADOPTERS.md](ADOPTERS.md).
+Using Docform in production or in an open source project? Add yourself to [ADOPTERS.md](ADOPTERS.md).
 
 ## Citing
 
-If you use docform in research, please cite it. GitHub's "Cite this repository" button reads [CITATION.cff](CITATION.cff).
+If you use Docform in research, please cite it. GitHub's "Cite this repository" button reads [CITATION.cff](CITATION.cff).
 
 ## Credits
 
-docform started as a fork of [python-docx-template](https://github.com/elapouya/python-docx-template) by Eric Lapouyade and builds on [python-docx](https://github.com/python-openxml/python-docx) and [Jinja2](https://github.com/pallets/jinja).
+Docform started as a fork of [python-docx-template](https://github.com/elapouya/python-docx-template) by Eric Lapouyade and builds on [python-docx](https://github.com/python-openxml/python-docx) and [Jinja2](https://github.com/pallets/jinja).
 
 ## License
 
