@@ -8,7 +8,7 @@ Created : 2017-01-14
 import zipfile
 from xml.etree import ElementTree
 
-from docxtpl import DocxTemplate, InlineImage
+from docform import DocxTemplate, InlineImage
 
 # for height and width you have to use millimeters (Mm), inches or points(Pt) class :
 from docx.shared import Mm

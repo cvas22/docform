@@ -2,7 +2,7 @@ import argparse
 import json
 import os
 
-from .template import DocxTemplate, TemplateError
+from .docx.template import DocxTemplate, TemplateError
 
 TEMPLATE_ARG = "template_path"
 JSON_ARG = "json_path"
@@ -13,7 +13,7 @@ QUIET_ARG = "quiet"
 
 def make_arg_parser():
     parser = argparse.ArgumentParser(
-        usage="python -m docxtpl [-h] [-o] [-q] {} {} {}".format(
+        usage="python -m docform [-h] [-o] [-q] {} {} {}".format(
             TEMPLATE_ARG, JSON_ARG, OUTPUT_ARG
         ),
         description="Make docx file from existing template docx and json data.",

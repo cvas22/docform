@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# python-docx-template documentation build configuration file, created by
+# docform documentation build configuration file, created by
 # sphinx-quickstart on Thu Mar 12 17:32:17 2015.
 #
 # This file is execfile()d with the current directory set to its
@@ -42,7 +42,7 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = "python-docx-template"
+project = "docform"
 copyright = "2015, Eric Lapouyade"
 
 # The version info for the project you're documenting, acts as replacement for
@@ -175,7 +175,7 @@ html_static_path = ["_static"]
 # html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "python-docx-templatedoc"
+htmlhelp_basename = "docformdoc"
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -195,8 +195,8 @@ latex_elements = {
 latex_documents = [
     (
         "index",
-        "python-docx-template.tex",
-        "python-docx-template Documentation",
+        "docform.tex",
+        "docform Documentation",
         "Eric Lapouyade",
         "manual",
     ),
@@ -230,8 +230,8 @@ latex_documents = [
 man_pages = [
     (
         "index",
-        "python-docx-template",
-        "python-docx-template Documentation",
+        "docform",
+        "docform Documentation",
         ["Eric Lapouyade"],
         1,
     )
@@ -249,10 +249,10 @@ man_pages = [
 texinfo_documents = [
     (
         "index",
-        "python-docx-template",
-        "python-docx-template Documentation",
+        "docform",
+        "docform Documentation",
         "Eric Lapouyade",
-        "python-docx-template",
+        "docform",
         "One line description of project.",
         "Miscellaneous",
     ),

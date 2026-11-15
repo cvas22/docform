@@ -4,7 +4,7 @@ Created : 2025-02-28
 @author: Hannah Imrie
 """
 
-from docxtpl import DocxTemplate, RichText, RichTextParagraph
+from docform import DocxTemplate, RichText, RichTextParagraph
 
 tpl = DocxTemplate("templates/richtext_paragraph_tpl.docx")
 

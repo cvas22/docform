@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from docxtpl import DocxTemplate
+from docform import DocxTemplate
 
 tpl = DocxTemplate("templates/horizontal_merge_tpl.docx")
 tpl.render({})
