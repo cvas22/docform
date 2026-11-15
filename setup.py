@@ -8,29 +8,8 @@ from setuptools import setup
 # python setup.py sdist bdist_wheel upload
 
 
-def read(*names):
-    values = dict()
-    for name in names:
-        filename = name + ".rst"
-        if os.path.isfile(filename):
-            fd = open(filename)
-            value = fd.read()
-            fd.close()
-        else:
-            value = ""
-        values[name] = value
-    return values
-
-
-long_description = """
-%(README)s
-
-News
-====
-%(CHANGES)s
-""" % read(
-    "README", "CHANGES"
-)
+with open("README.md", encoding="utf-8") as fh:
+    long_description = fh.read()
 
 
 def get_version(pkg):
@@ -51,7 +30,7 @@ setup(
     version=get_version("docform"),
     description="Fill Word document templates with data using Jinja2",
     long_description=long_description,
-    long_description_content_type="text/x-rst",
+    long_description_content_type="text/markdown",
     classifiers=[
         "Intended Audience :: Developers",
         "Development Status :: 4 - Beta",
@@ -66,7 +45,7 @@ setup(
     ],
     keywords="jinja2",
     url="https://github.com/cvas22/docform",
-    author="Eric Lapouyade",
+    author="Srinivas Chippagiri",
     license="LGPL-2.1-only",
     license_files=[],
     packages=["docform", "docform.docx"],

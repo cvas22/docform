@@ -1,9 +1,10 @@
 [project]
 name = "docform"
 dynamic = ["version"]
-description = "Fill Word document templates with data using Jinja2"
-authors = [{name="Eric Lapouyade", email="elapouya@proton.me"}, {name="Srinivas Chippagiri"}]
-readme = "README.rst"
+description = "Fill document templates with data using Jinja2"
+authors = [{name="Srinivas Chippagiri"}, {name="Eric Lapouyade", email="elapouya@proton.me"}]
+maintainers = [{name="Srinivas Chippagiri"}]
+readme = "README.md"
 requires-python = ">=3.7"
 license = {text="LGPL-2.1-only"}
 classifiers=[
