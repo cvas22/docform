@@ -1,7 +1,7 @@
 name: release
 
-# Publishing a GitHub release uploads the package to PyPI.
-# Running the workflow by hand uploads it to TestPyPI instead.
+# Publishing a GitHub release, or running the workflow by hand, uploads
+# the package to TestPyPI. Publishing to the real PyPI isn't set up yet.
 on:
   release:
     types: [published]
@@ -38,7 +38,6 @@ jobs:
           path: dist/
 
   testpypi:
-    if: github.event_name == 'workflow_dispatch'
     needs: build
     runs-on: ubuntu-latest
     environment:
@@ -54,19 +53,4 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
-
-  pypi:
-    if: github.event_name == 'release'
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/docform
-    permissions:
-      id-token: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
-      - uses: pypa/gh-action-pypi-publish@release/v1
+          skip-existing: true
