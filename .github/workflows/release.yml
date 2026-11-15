@@ -1,7 +1,8 @@
 name: release
 
-# Publishing a GitHub release uploads the package to PyPI.
-# Running the workflow by hand uploads it to TestPyPI instead.
+# Publishing a GitHub release uploads the package to TestPyPI, then to PyPI
+# once a maintainer approves the pypi environment deployment.
+# Running the workflow by hand only uploads to TestPyPI.
 on:
   release:
     types: [published]
@@ -38,7 +39,6 @@ jobs:
           path: dist/
 
   testpypi:
-    if: github.event_name == 'workflow_dispatch'
     needs: build
     runs-on: ubuntu-latest
     environment:
@@ -54,10 +54,11 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
 
   pypi:
     if: github.event_name == 'release'
-    needs: build
+    needs: testpypi
     runs-on: ubuntu-latest
     environment:
       name: pypi
