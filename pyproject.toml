@@ -34,7 +34,9 @@ docs = ["Sphinx", "sphinxcontrib-napoleon"]
 dev = [
     "mypy >=1.18.2; python_version >= '3.9'",
     "lxml-stubs >=0.5.1; python_version >= '3.9'",
-    "flake8 >=7.3.0; python_version >= '3.9'"
+    "flake8 >=7.3.0; python_version >= '3.9'",
+    "pytest >=7",
+    "docxcompose",
 ]
 
 [project.urls]
@@ -53,6 +55,11 @@ enable = true
 [tool.poetry-dynamic-versioning.from-file]
 source = "docform/__init__.py"
 pattern = '__version__ = "(.+)"'
+
+[tool.pytest.ini_options]
+testpaths = ["tests/unit"]
+pythonpath = ["."]
+addopts = "-ra"
 
 [tool.mypy]
 pretty = true

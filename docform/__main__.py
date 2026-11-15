@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import sys
 
 from .docx.template import DocxTemplate, TemplateError
 
@@ -164,8 +165,8 @@ def main():
         doc = render_docx(doc, json_data)
         save_file(doc, parsed_args)
     except RuntimeError as e:
-        print("Error: " + e.__str__())
-        return
+        print("Error: " + e.__str__(), file=sys.stderr)
+        sys.exit(1)
     finally:
         if not parsed_args[QUIET_ARG]:
             print("Exiting program!")
