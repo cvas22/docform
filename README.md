@@ -132,4 +132,4 @@ Docform started as a fork of [python-docx-template](https://github.com/elapouya/
 
 ## License
 
-[LGPL-2.1](LICENSE.txt), the same as python-docx-template.
+[LGPL-2.1](LICENSE.txt).
