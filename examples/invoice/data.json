@@ -1,0 +1,13 @@
+{
+  "invoice": {"number": "2026-0142", "date": "Nov 15, 2026", "due": "Dec 15, 2026"},
+  "customer": {"name": "Acme Corporation", "address": "500 Market Street, San Francisco, CA"},
+  "items": [
+    {"name": "Brand identity design", "qty": 1, "price": "$2,400.00", "amount": "$2,400.00"},
+    {"name": "Website landing page", "qty": 1, "price": "$1,800.00", "amount": "$1,800.00"},
+    {"name": "Product photography (hours)", "qty": 6, "price": "$95.00", "amount": "$570.00"},
+    {"name": "Print-ready brochure", "qty": 2, "price": "$350.00", "amount": "$700.00"}
+  ],
+  "total": "$5,470.00",
+  "paid": true,
+  "paid_on": "Nov 20, 2026"
+}
