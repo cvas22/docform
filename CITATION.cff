@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use Docform, please cite it as below."
-title: "Docform: fill document templates with data"
+title: "Docform"
 type: software
 authors:
   - family-names: Chippagiri
