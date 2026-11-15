@@ -1,6 +1,8 @@
 # Docform
 
-[![Python](https://img.shields.io/badge/python-3.7%2B-blue)](pyproject.toml)
+[![PyPI](https://img.shields.io/pypi/v/docform)](https://pypi.org/project/docform/)
+[![Python](https://img.shields.io/pypi/pyversions/docform)](https://pypi.org/project/docform/)
+[![Tests](https://github.com/cvas22/docform/actions/workflows/tests.yml/badge.svg)](https://github.com/cvas22/docform/actions/workflows/tests.yml)
 [![License: LGPL-2.1](https://img.shields.io/badge/license-LGPL--2.1-green)](LICENSE.txt)
 
 **Fill document templates with data.**
