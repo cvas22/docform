@@ -55,3 +55,28 @@ jobs:
             echo "::endgroup::"
           done
           exit $failed
+
+  package:
+    name: Build and check the package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Build
+        run: |
+          python -m pip install --upgrade build twine
+          python -m build
+          python -m twine check --strict dist/*
+      - name: Check what's in the package
+        run: |
+          python -m zipfile -l dist/*.whl
+          tar tzf dist/*.tar.gz
+          python -m zipfile -l dist/*.whl | grep -q "docform/docx/template.py"
+          python -m zipfile -l dist/*.whl | grep -qi "license"
+          tar tzf dist/*.tar.gz | grep -qi "license"
+      - name: Install the wheel and import it
+        run: |
+          python -m pip install dist/*.whl
+          cd /tmp && python -c "import docform, docform.docx; print(docform.__version__)"

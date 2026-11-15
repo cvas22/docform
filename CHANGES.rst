@@ -1,8 +1,16 @@
-Unreleased
-----------
+0.21.0 (unreleased)
+-------------------
+First release as Docform. Rendering output matches docxtpl 0.20.2.
+
 - Rename the project to Docform. The package is now ``docform`` and the
   Word code lives in ``docform.docx``. ``docform.docx.Template`` is an alias
   for ``DocxTemplate``.
+- ``InlineImage`` takes ``title`` and ``descr`` for image alt text (from
+  python-docx-template after 0.20.2)
+- Fix the order of run properties written by ``RichText`` (from
+  python-docx-template after 0.20.2)
+- ``python -m docform`` exits with status 1 on errors instead of 0
+- Add a pytest suite and CI
 
 0.20.2 (2025-11-13)
 -------------------

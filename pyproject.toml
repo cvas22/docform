@@ -10,6 +10,10 @@ license = {text="LGPL-2.1-only"}
 classifiers=[
     "Intended Audience :: Developers",
     "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: GNU Lesser General Public License v2 (LGPLv2)",
+    "Operating System :: OS Independent",
+    "Topic :: Office/Business",
+    "Topic :: Text Processing :: Markup",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
@@ -41,8 +45,10 @@ dev = [
 ]
 
 [project.urls]
-homepage = "https://github.com/cvas22/docform"
-repository = "https://github.com/cvas22/docform.git"
+Homepage = "https://github.com/cvas22/docform"
+Repository = "https://github.com/cvas22/docform"
+Issues = "https://github.com/cvas22/docform/issues"
+Changelog = "https://github.com/cvas22/docform/blob/main/CHANGES.rst"
 
 [tool.poetry]
 version = "0.0.0"
