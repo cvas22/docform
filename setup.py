@@ -47,9 +47,9 @@ def get_version(pkg):
 
 
 setup(
-    name="docxtpl",
-    version=get_version("docxtpl"),
-    description="Python docx template engine",
+    name="docform",
+    version=get_version("docform"),
+    description="Fill Word document templates with data using Jinja2",
     long_description=long_description,
     long_description_content_type="text/x-rst",
     classifiers=[
@@ -65,11 +65,11 @@ setup(
         "Programming Language :: Python :: 3.13",
     ],
     keywords="jinja2",
-    url="https://github.com/elapouya/python-docx-template",
+    url="https://github.com/cvas22/docform",
     author="Eric Lapouyade",
     license="LGPL-2.1-only",
     license_files=[],
-    packages=["docxtpl"],
+    packages=["docform", "docform.docx"],
     install_requires=["python-docx>=1.1.1", "jinja2", "lxml"],
     extras_require={"docs": ["Sphinx", "sphinxcontrib-napoleon"], "subdoc": ["docxcompose"]},
     eager_resources=["docs"],

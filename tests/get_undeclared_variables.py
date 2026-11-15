@@ -9,7 +9,7 @@ This test demonstrates the correct behavior of get_undeclared_template_variables
 3. After rendering with complete context - returns empty set
 """
 
-from docxtpl import DocxTemplate
+from docform import DocxTemplate
 
 
 def test_before_render():

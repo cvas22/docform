@@ -1,8 +1,8 @@
 [project]
-name = "docxtpl"
+name = "docform"
 dynamic = ["version"]
-description = "Python docx template engine"
-authors = [{name="Eric Lapouyade", email="elapouya@proton.me"}]
+description = "Fill Word document templates with data using Jinja2"
+authors = [{name="Eric Lapouyade", email="elapouya@proton.me"}, {name="Srinivas Chippagiri"}]
 readme = "README.rst"
 requires-python = ">=3.7"
 license = {text="LGPL-2.1-only"}
@@ -19,7 +19,7 @@ classifiers=[
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
 ]
-keywords = ["jinja2"]
+keywords = ["jinja2", "docx", "word", "template", "document generation"]
 dependencies = [
     "python-docx",
     "jinja2",
@@ -38,9 +38,8 @@ dev = [
 ]
 
 [project.urls]
-homepage = "https://github.com/elapouya/python-docx-template"
-repository = "https://github.com/elapouya/python-docx-template.git"
-document = "https://docxtpl.readthedocs.org"
+homepage = "https://github.com/cvas22/docform"
+repository = "https://github.com/cvas22/docform.git"
 
 [tool.poetry]
 version = "0.0.0"
@@ -52,7 +51,7 @@ poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
 enable = true
 
 [tool.poetry-dynamic-versioning.from-file]
-source = "docxtpl/__init__.py"
+source = "docform/__init__.py"
 pattern = '__version__ = "(.+)"'
 
 [tool.mypy]
@@ -67,7 +66,7 @@ module = ["docxcompose.*"]
 ignore_missing_imports = true
 
 [tool.pdm]
-version = {source="file", path="docxtpl/__init__.py"}
+version = {source="file", path="docform/__init__.py"}
 
 [build-system]
 requires = ["pdm-backend"]

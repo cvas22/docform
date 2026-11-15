@@ -11,7 +11,7 @@ if os.path.exists(OUTPUT_FILENAME):
     os.unlink(OUTPUT_FILENAME)
 
 os.chdir(os.path.dirname(__file__))
-cmd = "python -m docxtpl %s %s %s %s %s" % (
+cmd = "python -m docform %s %s %s %s %s" % (
     TEMPLATE_PATH,
     JSON_PATH,
     OUTPUT_FILENAME,

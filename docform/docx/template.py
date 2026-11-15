@@ -758,7 +758,7 @@ class DocxTemplate(object):
                 docx_file.seek(0)
 
             else:
-                tmp_file = "%s_docxtpl_before_replace_medias" % docx_file
+                tmp_file = "%s_docform_before_replace_medias" % docx_file
                 os.rename(docx_file, tmp_file)
 
             with zipfile.ZipFile(tmp_file) as zin:

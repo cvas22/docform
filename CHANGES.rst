@@ -1,3 +1,9 @@
+Unreleased
+----------
+- Rename the project to docform. The package is now ``docform`` and the
+  Word code lives in ``docform.docx``. ``docform.docx.Template`` is an alias
+  for ``DocxTemplate``.
+
 0.20.2 (2025-11-13)
 -------------------
 - Fix fix_tables()

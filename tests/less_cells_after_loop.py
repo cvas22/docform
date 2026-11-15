@@ -1,4 +1,4 @@
-from docxtpl import DocxTemplate
+from docform import DocxTemplate
 
 tpl = DocxTemplate("templates/less_cells_after_loop_tpl.docx")
 tpl.render({})

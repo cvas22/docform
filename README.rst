@@ -1,38 +1,56 @@
-====================
-python-docx-template
-====================
+=======
+docform
+=======
 
-Use a docx as a jinja2 template
+Fill document templates with data.
 
-Introduction
-------------
+You design the document in Word, with all the layout, styles, headers and
+images you want, and put Jinja2 tags where the data goes. docform renders it
+into a finished .docx, so you can generate contracts, invoices, reports or
+letters in bulk from Python.
 
-This package uses 2 major packages :
+.. code-block:: python
 
-- `python-docx <https://github.com/python-openxml/python-docx>`_ for reading, writing and creating sub documents
-- `jinja2 <https://github.com/pallets/jinja>`_ for managing tags inserted into the template docx
+    from docform import DocxTemplate
 
-python-docx-template has been created because python-docx is powerful for creating documents but not for modifying them.
+    doc = DocxTemplate("invoice_template.docx")
+    doc.render({"customer": "Acme", "items": [{"name": "Widget", "qty": 3}]})
+    doc.save("invoice_acme.docx")
 
-The idea is to begin to create an example of the document you want to generate with microsoft word, it can be as complex as you want :
-pictures, index tables, footer, header, variables, anything you can do with word.
-Then, as you are still editing the document with microsoft word, you insert jinja2-like tags directly in the document.
-You save the document as a .docx file (xml format) : it will be your .docx template file.
+Besides plain variables, templates can loop over table rows, columns and
+paragraphs, insert images and rich text, merge other .docx files as
+subdocuments, and fill headers, footers and document properties.
 
-Now you can use python-docx-template to generate as many word documents you want from this .docx template and context variables you will associate.
+Word (.docx) is the only format today. Format-specific code lives under its
+own module (``docform.docx``) so other formats can be added next to it.
 
+Install
+-------
+
+.. code-block:: bash
+
+    pip install docform
+
+    # with subdocument support
+    pip install "docform[subdoc]"
+
+There's also a command line interface:
+
+.. code-block:: bash
+
+    python -m docform template.docx data.json output.docx
 
 Documentation
 -------------
 
-Please, `read the doc <http://docxtpl.readthedocs.org>`_
+See the ``docs`` folder for the full template syntax and API.
 
-Other projects
---------------
+Credits
+-------
 
-If you like python-docx-template, please have a look at some of my other projects :
-
-- `django-listing <https://github.com/elapouya/django-listing>`_ : A listing/table library on steroid for Djano
-- `python-textops3 <https://github.com/elapouya/python-textops3>`_ : Chainable text operations
-- `django-robohash-svg <https://github.com/elapouya/django-robohash-svg>`_ : Create svg robots avatars
-
+docform started as a fork of
+`python-docx-template <https://github.com/elapouya/python-docx-template>`_
+by Eric Lapouyade, and builds on
+`python-docx <https://github.com/python-openxml/python-docx>`_ and
+`Jinja2 <https://github.com/pallets/jinja>`_. It's distributed under the same
+LGPL-2.1 license.

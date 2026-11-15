@@ -1,24 +1,20 @@
-.. python-docx-template documentation master file, created by
+.. docform documentation master file, created by
    sphinx-quickstart on Thu Mar 12 17:32:17 2015.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to python-docx-template's documentation!
+Welcome to docform's documentation!
 ================================================
 
 .. rubric:: Quickstart
 
 To install using pip::
 
-    pip install docxtpl
-
-or using conda::
-
-    conda install docxtpl --channel conda-forge
+    pip install docform
 
 Usage::
 
-    from docxtpl import DocxTemplate
+    from docform import DocxTemplate
 
     doc = DocxTemplate("my_word_template.docx")
     context = { 'company_name' : "World company" }
@@ -33,14 +29,14 @@ This package uses 2 major packages :
 - python-docx for reading, writing and creating sub documents
 - jinja2 for managing tags inserted into the template docx
 
-python-docx-template has been created because python-docx is powerful for creating documents but not for modifying them.
+docform has been created because python-docx is powerful for creating documents but not for modifying them.
 
 The idea is to begin to create an example of the document you want to generate with microsoft word, it can be as complex as you want :
 pictures, index tables, footer, header, variables, anything you can do with word.
 Then, as you are still editing the document with microsoft word, you insert jinja2-like tags directly in the document.
 You save the document as a .docx file (xml format) : it will be your .docx template file.
 
-Now you can use python-docx-template to generate as many word documents you want from this .docx template and context variables you will associate.
+Now you can use docform to generate as many word documents you want from this .docx template and context variables you will associate.
 
 Jinja2-like syntax
 ------------------
@@ -75,8 +71,8 @@ In order to manage paragraphs, table rows, table columns, runs, special syntax h
    {%tc jinja2_tag %} for table columns
    {%r jinja2_tag %} for runs
 
-By using these tags, python-docx-template will take care to put the real jinja2 tags (without the `p`, `tr`, `tc` or `r`) at the right place into the document's xml source code.
-In addition, these tags also tell python-docx-template to **remove** the paragraph, table row, table column or run where the tags are located.
+By using these tags, docform will take care to put the real jinja2 tags (without the `p`, `tr`, `tc` or `r`) at the right place into the document's xml source code.
+In addition, these tags also tell docform to **remove** the paragraph, table row, table column or run where the tags are located.
 
 For example, if you have this kind of template::
 
@@ -169,7 +165,7 @@ A text containing Jinja2 tags may be unreadable if too long::
 
    My house is located {% if living_in_town %} in urban area {% else %} in countryside {% endif %} and I love it.
 
-One can use *ENTER* or *SHIFT+ENTER* to split a text like below, then use ``{%-`` and ``-%}`` to tell docxtpl to merge the whole thing::
+One can use *ENTER* or *SHIFT+ENTER* to split a text like below, then use ``{%-`` and ``-%}`` to tell docform to merge the whole thing::
 
    My house is located
    {%- if living_in_town -%}
@@ -286,13 +282,13 @@ Please see tests/inline_image.py for an example.
 Sub-documents
 -------------
 
-> Need to install with the subdoc extra: `pip install "docxtpl[subdoc]"`
+> Need to install with the subdoc extra: `pip install "docform[subdoc]"`
 
 A template variable can contain a complex subdoc object and be built from scratch using python-docx document methods.
 To do so, first, get the sub-document object from your template object, then use it by treating it as a python-docx document object.
 See example in `tests/subdoc.py`.
 
-Since docxtpl V0.12.0, it is now possible to merge an existing .docx as a subdoc, just specify its path when
+Since V0.12.0, it is now possible to merge an existing .docx as a subdoc, just specify its path when
 calling method `new_subdoc()` ::
 
    tpl = DocxTemplate('templates/merge_docx_master_tpl.docx')
@@ -448,7 +444,7 @@ Jinja custom filters
 ``render()`` accepts ``jinja_env`` optional argument : you may pass a jinja environment object.
 By this way you will be able to add some custom jinja filters::
 
-    from docxtpl import DocxTemplate
+    from docform import DocxTemplate
     import jinja2
 
     def multiply_by(value, by):
@@ -469,9 +465,9 @@ Then in your template, you will be able to use::
 Command-line execution
 ----------------------
 
-One can use `docxtpl` module directly on command line to generate a docx from a template and a json file as a context::
+One can use `docform` module directly on command line to generate a docx from a template and a json file as a context::
 
-   usage: python -m docxtpl [-h] [-o] [-q] template_path json_path output_filename
+   usage: python -m docform [-h] [-o] [-q] template_path json_path output_filename
 
    Make docx file from existing template docx and json data.
 
@@ -500,11 +496,11 @@ Docx test templates are in `tests/templates/`. To generate final docx files::
 
 Generated files are located in `tests/output` directory.
 
-If you are not sure about your python environment, python-docx-template provides Pipfiles
+If you are not sure about your python environment, docform provides Pipfiles
 for that::
 
    pip install pipenv (if not already done)
-   cd python-docx-template (where Pipfiles are)
+   cd docform (where Pipfiles are)
    pipenv install --python 3.6 -d
    pipenv shell
    cd tests/
@@ -513,16 +509,15 @@ for that::
 Share
 -----
 
-If you like this project, please rate and share it here : http://rate.re/github/elapouya/python-docx-template
 
 
 .. rubric:: Functions index
 
-.. currentmodule:: docxtpl
+.. currentmodule:: docform
 
 .. rubric:: Functions documentation
 
-.. automodule:: docxtpl
+.. automodule:: docform
    :members:
 
 

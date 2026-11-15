@@ -6,7 +6,7 @@ name = "pypi"
 [packages]
 
 [dev-packages]
-docxtpl = {editable = true, path = "."}
+docform = {editable = true, path = "."}
 flake8 = "*"
 
 [requires]

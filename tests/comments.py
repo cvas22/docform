@@ -1,4 +1,4 @@
-from docxtpl import DocxTemplate
+from docform import DocxTemplate
 
 tpl = DocxTemplate("templates/comments_tpl.docx")
 

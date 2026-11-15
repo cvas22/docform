@@ -1,6 +1,6 @@
-from docxtpl import DocxTemplate
+from docform import DocxTemplate
 
-# With old docxtpl version, "... for spicy ..." was replaced by "... forspicy..."
+# With old versions, "... for spicy ..." was replaced by "... forspicy..."
 # This test is for checking that is some cases the spaces are not lost anymore
 
 tpl = DocxTemplate("templates/preserve_spaces_tpl.docx")
