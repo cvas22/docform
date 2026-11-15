@@ -1,6 +1,6 @@
 Unreleased
 ----------
-- Rename the project to docform. The package is now ``docform`` and the
+- Rename the project to Docform. The package is now ``docform`` and the
   Word code lives in ``docform.docx``. ``docform.docx.Template`` is an alias
   for ``DocxTemplate``.
 

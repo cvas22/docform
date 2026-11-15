@@ -1,9 +1,9 @@
-.. docform documentation master file, created by
+.. Docform documentation master file, created by
    sphinx-quickstart on Thu Mar 12 17:32:17 2015.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to docform's documentation!
+Welcome to Docform's documentation!
 ================================================
 
 .. rubric:: Quickstart
@@ -29,14 +29,14 @@ This package uses 2 major packages :
 - python-docx for reading, writing and creating sub documents
 - jinja2 for managing tags inserted into the template docx
 
-docform has been created because python-docx is powerful for creating documents but not for modifying them.
+Docform has been created because python-docx is powerful for creating documents but not for modifying them.
 
 The idea is to begin to create an example of the document you want to generate with microsoft word, it can be as complex as you want :
 pictures, index tables, footer, header, variables, anything you can do with word.
 Then, as you are still editing the document with microsoft word, you insert jinja2-like tags directly in the document.
 You save the document as a .docx file (xml format) : it will be your .docx template file.
 
-Now you can use docform to generate as many word documents you want from this .docx template and context variables you will associate.
+Now you can use Docform to generate as many word documents you want from this .docx template and context variables you will associate.
 
 Jinja2-like syntax
 ------------------
@@ -71,8 +71,8 @@ In order to manage paragraphs, table rows, table columns, runs, special syntax h
    {%tc jinja2_tag %} for table columns
    {%r jinja2_tag %} for runs
 
-By using these tags, docform will take care to put the real jinja2 tags (without the `p`, `tr`, `tc` or `r`) at the right place into the document's xml source code.
-In addition, these tags also tell docform to **remove** the paragraph, table row, table column or run where the tags are located.
+By using these tags, Docform will take care to put the real jinja2 tags (without the `p`, `tr`, `tc` or `r`) at the right place into the document's xml source code.
+In addition, these tags also tell Docform to **remove** the paragraph, table row, table column or run where the tags are located.
 
 For example, if you have this kind of template::
 
@@ -165,7 +165,7 @@ A text containing Jinja2 tags may be unreadable if too long::
 
    My house is located {% if living_in_town %} in urban area {% else %} in countryside {% endif %} and I love it.
 
-One can use *ENTER* or *SHIFT+ENTER* to split a text like below, then use ``{%-`` and ``-%}`` to tell docform to merge the whole thing::
+One can use *ENTER* or *SHIFT+ENTER* to split a text like below, then use ``{%-`` and ``-%}`` to tell Docform to merge the whole thing::
 
    My house is located
    {%- if living_in_town -%}
@@ -496,7 +496,7 @@ Docx test templates are in `tests/templates/`. To generate final docx files::
 
 Generated files are located in `tests/output` directory.
 
-If you are not sure about your python environment, docform provides Pipfiles
+If you are not sure about your python environment, Docform provides Pipfiles
 for that::
 
    pip install pipenv (if not already done)

@@ -1,6 +1,6 @@
 cff-version: 1.2.0
-message: "If you use docform, please cite it as below."
-title: "docform: fill document templates with data"
+message: "If you use Docform, please cite it as below."
+title: "Docform: fill document templates with data"
 type: software
 authors:
   - family-names: Chippagiri
@@ -11,7 +11,7 @@ version: 0.20.2
 license: LGPL-2.1-only
 repository-code: "https://github.com/cvas22/docform"
 abstract: >-
-  docform renders Word (.docx) documents from templates that use Jinja2 tags,
+  Docform renders Word (.docx) documents from templates that use Jinja2 tags,
   for generating contracts, invoices, reports and letters from data.
 keywords:
   - docx

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# docform documentation build configuration file, created by
+# Docform documentation build configuration file, created by
 # sphinx-quickstart on Thu Mar 12 17:32:17 2015.
 #
 # This file is execfile()d with the current directory set to its
@@ -42,7 +42,7 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = "docform"
+project = "Docform"
 copyright = "2015, Eric Lapouyade"
 
 # The version info for the project you're documenting, acts as replacement for
@@ -196,7 +196,7 @@ latex_documents = [
     (
         "index",
         "docform.tex",
-        "docform Documentation",
+        "Docform Documentation",
         "Eric Lapouyade",
         "manual",
     ),
@@ -231,7 +231,7 @@ man_pages = [
     (
         "index",
         "docform",
-        "docform Documentation",
+        "Docform Documentation",
         ["Eric Lapouyade"],
         1,
     )
@@ -250,7 +250,7 @@ texinfo_documents = [
     (
         "index",
         "docform",
-        "docform Documentation",
+        "Docform Documentation",
         "Eric Lapouyade",
         "docform",
         "One line description of project.",
