@@ -1,11 +1,21 @@
+<div align="center">
+
 # Docform
 
-[![PyPI](https://img.shields.io/pypi/v/docform)](https://pypi.org/project/docform/)
+**Fill document templates with data.**
+
+[![PyPI](https://img.shields.io/pypi/v/docform?color=blue)](https://pypi.org/project/docform/)
 [![Python](https://img.shields.io/pypi/pyversions/docform)](https://pypi.org/project/docform/)
 [![Tests](https://github.com/cvas22/docform/actions/workflows/tests.yml/badge.svg)](https://github.com/cvas22/docform/actions/workflows/tests.yml)
-[![License: LGPL-2.1](https://img.shields.io/badge/license-LGPL--2.1-green)](LICENSE.txt)
+[![CodeQL](https://github.com/cvas22/docform/actions/workflows/codeql.yml/badge.svg)](https://github.com/cvas22/docform/actions/workflows/codeql.yml)
+[![License: LGPL-2.1](https://img.shields.io/badge/license-LGPL--2.1-blue)](LICENSE.txt)
+[![Downloads](https://img.shields.io/pepy/dt/docform?color=blue&label=downloads)](https://pepy.tech/project/docform)
 
-**Fill document templates with data.**
+[Install](#install) · [Quickstart](#quickstart) · [Example](#example) · [Docs](docs/index.rst) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md)
+
+</div>
+
+---
 
 Design the document in Word with whatever layout, styles, headers and images you need, and put [Jinja2](https://jinja.palletsprojects.com/) tags where the data goes. Docform renders it into a finished `.docx`, so you can generate contracts, invoices, reports, certificates and letters in bulk from Python.
 
@@ -120,6 +130,14 @@ from docform.docx import Template
 
 The full template syntax and API reference are in [`docs/`](docs/index.rst). [`examples/`](examples/) has complete, runnable examples, and [`tests/`](tests/) has a small script for every feature.
 
+## Roadmap
+
+Next up are the stuck fixes from python-docx-template, type hints and safer defaults for untrusted templates, and later Excel and PowerPoint support. See [ROADMAP.md](ROADMAP.md).
+
+## Contributing
+
+Bug reports, fixes and features are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers setup, tests and how to send a pull request, and everyone taking part follows the [code of conduct](CODE_OF_CONDUCT.md). Please report security problems privately as described in [SECURITY.md](SECURITY.md).
+
 ## Adopters
 
 Using Docform in production or in an open source project? Add yourself to [ADOPTERS.md](ADOPTERS.md).
@@ -128,6 +146,10 @@ Using Docform in production or in an open source project? Add yourself to [ADOPT
 
 If you use Docform in research, please cite it. GitHub's "Cite this repository" button reads [CITATION.cff](CITATION.cff).
 
+## Maintainer
+
+Docform is maintained by [Srinivas Chippagiri](https://github.com/cvas22).
+
 ## Credits
 
 Docform started as a fork of [python-docx-template](https://github.com/elapouya/python-docx-template) by Eric Lapouyade and builds on [python-docx](https://github.com/python-openxml/python-docx) and [Jinja2](https://github.com/pallets/jinja).
@@ -135,3 +157,9 @@ Docform started as a fork of [python-docx-template](https://github.com/elapouya/
 ## License
 
 [LGPL-2.1](LICENSE.txt).
+
+---
+
+<div align="center">
+If Docform saves you time, a star on GitHub helps others find it.
+</div>

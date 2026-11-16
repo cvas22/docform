@@ -1,23 +1,31 @@
 ---
 name: Bug report
-about: Create a bug report to help us fix the code
-title: ''
+about: Something renders wrong, crashes, or produces a broken document
 labels: bug
-assignees: ''
-
 ---
 
-## Describe the bug
-A clear and concise description of what the bug is.
+## What happened
 
-## To Reproduce
-Please, provide a fully standalone runnable test case : minimal python code + docx template + other files if needed (images etc...) 
+<!-- What went wrong? Include the full error message and traceback if there is one. -->
 
-## Expected behavior
-A clear and concise description of what you expected to happen.
+## What you expected
 
-## Screenshots
-If applicable, add screenshots to help explain your problem.
+## How to reproduce
 
-## Additional context
-Add any other context about the problem here.
+<!-- A small runnable script plus the .docx template. Attach the template to the issue,
+with anything private removed. Issues we can't reproduce are hard to fix. -->
+
+```python
+from docform import DocxTemplate
+
+doc = DocxTemplate("template.docx")
+doc.render({...})
+doc.save("out.docx")
+```
+
+## Versions
+
+- Docform:
+- Python:
+- python-docx:
+- OS, and the app you opened the result in (Word, LibreOffice, ...):
