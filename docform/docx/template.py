@@ -873,21 +873,25 @@ class DocxTemplate(object):
 
     def _replace_docx_part_pics(self, doc_part, replaced_pics):
 
-        et = etree.fromstring(doc_part.blob)
+        # Work on the live XML so a picture can be pointed at a new image part.
+        et = getattr(doc_part, "_element", None)
+        if et is None:
+            et = etree.fromstring(doc_part.blob)
+        # python-docx elements override xpath() without the namespaces argument
+        def _xpath(element, path):
+            return etree._Element.xpath(element, path, namespaces=docx.oxml.ns.nsmap)
 
         part_map = {}
 
-        gds = et.xpath("//a:graphic/a:graphicData", namespaces=docx.oxml.ns.nsmap)
+        gds = _xpath(et, "//a:graphic/a:graphicData")
         for gd in gds:
             rel = None
             # Either IMAGE, CHART, SMART_ART, ...
             try:
                 if gd.attrib["uri"] == docx.oxml.ns.nsmap["pic"]:
                     # Either PICTURE or LINKED_PICTURE image
-                    blip = gd.xpath(
-                        "pic:pic/pic:blipFill/a:blip", namespaces=docx.oxml.ns.nsmap
-                    )[0]
-                    dest = blip.xpath("@r:embed", namespaces=docx.oxml.ns.nsmap)
+                    blip = _xpath(gd, "pic:pic/pic:blipFill/a:blip")[0]
+                    dest = _xpath(blip, "@r:embed")
                     if len(dest) > 0:
                         rel = dest[0]
                     else:
@@ -896,19 +900,13 @@ class DocxTemplate(object):
                     continue
 
                 non_visual_properties = "pic:pic/pic:nvPicPr/pic:cNvPr/"
-                filename = gd.xpath(
-                    "%s@name" % non_visual_properties, namespaces=docx.oxml.ns.nsmap
-                )[0]
-                titles = gd.xpath(
-                    "%s@title" % non_visual_properties, namespaces=docx.oxml.ns.nsmap
-                )
+                filename = _xpath(gd, "%s@name" % non_visual_properties)[0]
+                titles = _xpath(gd, "%s@title" % non_visual_properties)
                 if titles:
                     title = titles[0]
                 else:
                     title = ""
-                descriptions = gd.xpath(
-                    "%s@descr" % non_visual_properties, namespaces=docx.oxml.ns.nsmap
-                )
+                descriptions = _xpath(gd, "%s@descr" % non_visual_properties)
                 if descriptions:
                     description = descriptions[0]
                 else:
@@ -922,7 +920,11 @@ class DocxTemplate(object):
                 # replace data
                 for img_id, img_data in self.pics_to_replace.items():
                     if img_id == filename or img_id == title or img_id == description:
-                        part_map[filename][1]._blob = img_data
+                        new_rel = self._swap_pic_image(doc_part, blip, rel, img_data)
+                        part_map[filename] = (
+                            doc_part.rels[new_rel].target_ref,
+                            doc_part.rels[new_rel].target_part,
+                        )
                         replaced_pics[img_id] = True
                         break
 
@@ -932,6 +934,33 @@ class DocxTemplate(object):
                 continue
 
         self.pic_map.update(part_map)
+
+    @staticmethod
+    def _swap_pic_image(doc_part, blip, rel, img_data):
+        """Point one picture at img_data and return its relationship id.
+
+        Word stores identical images once, so several pictures can share an
+        image part. Giving this picture its own part keeps the others intact.
+        """
+        try:
+            new_rel, _ = doc_part.get_or_add_image(io.BytesIO(img_data))
+        except Exception:
+            # Formats python-docx can't read (EMF, WMF, ...): overwrite the
+            # shared image data like before.
+            doc_part.rels[rel].target_part._blob = img_data
+            return rel
+        if new_rel != rel:
+            # Drop the old relationship only if this picture was its last user.
+            # python-docx's drop_rel() doesn't count r:embed, so count here.
+            users = etree._Element.xpath(
+                blip.getroottree().getroot(),
+                "//@r:embed | //@r:link | //@r:id",
+                namespaces=docx.oxml.ns.nsmap,
+            )
+            if sum(1 for u in users if u == rel) < 2:
+                del doc_part.rels[rel]
+            blip.set("{%s}embed" % docx.oxml.ns.nsmap["r"], new_rel)
+        return new_rel
 
     def build_url_id(self, url):
         self.init_docx()

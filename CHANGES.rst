@@ -10,6 +10,7 @@ Unreleased
   ``render()`` and show the rendered content after it.
 - Warn when the rendered document isn't valid XML, for example a value with ``<`` rendered
   without autoescape, instead of silently dropping the content after it.
+- ``replace_pic()`` only replaces the named picture, not every copy of the same image.
 
 0.21.0 (2026-11-15)
 -------------------
