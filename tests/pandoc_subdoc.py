@@ -10,9 +10,9 @@ from docform import DocxTemplate
 
 W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 R_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
-DEFAULT_NS = "urn:docxtpl:test-default"
-ATTRIBUTE_NS = "urn:docxtpl:test-attribute"
-CONFLICT_NS = "urn:docxtpl:test-conflict"
+DEFAULT_NS = "urn:docform:test-default"
+ATTRIBUTE_NS = "urn:docform:test-attribute"
+CONFLICT_NS = "urn:docform:test-conflict"
 
 
 def make_template():
