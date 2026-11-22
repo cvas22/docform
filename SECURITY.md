@@ -17,7 +17,7 @@ Include the Docform version, a description of the problem, and a minimal templat
 
 ## Templates are code
 
-Docform renders templates with Jinja2, so a template can run expressions in your Python process. That's expected behavior, not a vulnerability. If you render templates written by people you don't trust, use a sandboxed environment:
+Docform renders templates with Jinja2, and by default it uses Jinja2's `SandboxedEnvironment`, so a template can't reach Python internals. If you pass your own `jinja_env`, Docform uses it as is, so make it a `SandboxedEnvironment` when templates come from people you don't trust:
 
 ```python
 from jinja2.sandbox import SandboxedEnvironment
@@ -25,4 +25,6 @@ from jinja2.sandbox import SandboxedEnvironment
 doc.render(context, jinja_env=SandboxedEnvironment(autoescape=True))
 ```
 
-A way to escape the sandbox through Docform's own code would be a vulnerability, and should be reported as above.
+Rendering with a plain `jinja2.Environment()` or the `--unsafe` command line flag turns the sandbox off. Code run by a template in that mode is expected behavior, not a vulnerability.
+
+A way to escape the default sandbox through Docform's own code would be a vulnerability, and should be reported as above.

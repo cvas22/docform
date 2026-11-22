@@ -16,7 +16,8 @@ from docx.opc.oxml import parse_xml
 from docx.opc.part import XmlPart
 import docx.oxml.ns
 from docx.opc.constants import RELATIONSHIP_TYPE as REL_TYPE
-from jinja2 import Environment, Template, meta
+from jinja2 import Environment, meta
+from jinja2.sandbox import SandboxedEnvironment
 from jinja2.exceptions import TemplateError
 
 try:
@@ -314,10 +315,9 @@ class DocxTemplate(object):
         src_xml = re.sub(r"<w:p([ >])", r"\n<w:p\1", src_xml)
         try:
             self.current_rendering_part = part
-            if jinja_env:
-                template = jinja_env.from_string(src_xml)
-            else:
-                template = Template(src_xml)
+            if jinja_env is None:
+                jinja_env = SandboxedEnvironment()
+            template = jinja_env.from_string(src_xml)
             dst_xml = template.render(context)
         except TemplateError as exc:
             if hasattr(exc, "lineno") and exc.lineno is not None:
@@ -357,7 +357,7 @@ class DocxTemplate(object):
             # 'version',
         ]
         if jinja_env is None:
-            jinja_env = Environment()
+            jinja_env = SandboxedEnvironment()
 
         for prop in properties:
             initial = getattr(self.docx.core_properties, prop)
@@ -369,7 +369,7 @@ class DocxTemplate(object):
         self, context: Dict[str, Any], jinja_env: Optional[Environment] = None
     ) -> None:
         if jinja_env is None:
-            jinja_env = Environment()
+            jinja_env = SandboxedEnvironment()
 
         for section in self.docx.sections:
             for part in section.part.package.parts:
@@ -487,11 +487,12 @@ class DocxTemplate(object):
         # init template working attributes
         self.render_init()
 
-        if autoescape:
-            if not jinja_env:
-                jinja_env = Environment(autoescape=autoescape)
-            else:
-                jinja_env.autoescape = autoescape
+        # Templates run in a sandbox unless the caller passes their own
+        # environment, e.g. jinja2.Environment() for trusted templates.
+        if jinja_env is None:
+            jinja_env = SandboxedEnvironment(autoescape=autoescape)
+        elif autoescape:
+            jinja_env.autoescape = autoescape
 
         # Body
         xml_src = self.build_xml(context, jinja_env)

@@ -3,6 +3,8 @@ import json
 import os
 import sys
 
+from jinja2 import Environment
+
 from .docx.template import DocxTemplate, TemplateError
 
 TEMPLATE_ARG = "template_path"
@@ -10,11 +12,12 @@ JSON_ARG = "json_path"
 OUTPUT_ARG = "output_filename"
 OVERWRITE_ARG = "overwrite"
 QUIET_ARG = "quiet"
+UNSAFE_ARG = "unsafe"
 
 
 def make_arg_parser():
     parser = argparse.ArgumentParser(
-        usage="python -m docform [-h] [-o] [-q] {} {} {}".format(
+        usage="python -m docform [-h] [-o] [-q] [--unsafe] {} {} {}".format(
             TEMPLATE_ARG, JSON_ARG, OUTPUT_ARG
         ),
         description="Make docx file from existing template docx and json data.",
@@ -39,6 +42,14 @@ def make_arg_parser():
         "--" + QUIET_ARG,
         action="store_true",
         help="Do not display unnecessary messages",
+    )
+    parser.add_argument(
+        "--" + UNSAFE_ARG,
+        action="store_true",
+        help=(
+            "Render without the Jinja2 sandbox. Only use this for templates "
+            "you trust, since they can then run any Python code."
+        ),
     )
     return parser
 
@@ -68,7 +79,7 @@ def is_argument_valid(arg_name, arg_value, overwrite):
         return arg_value.endswith(".docx") and check_exists_ask_overwrite(
             arg_value, overwrite
         )
-    elif arg_name in [OVERWRITE_ARG, QUIET_ARG]:
+    elif arg_name in [OVERWRITE_ARG, QUIET_ARG, UNSAFE_ARG]:
         return arg_value in [True, False]
 
 
@@ -129,9 +140,9 @@ def make_docxtemplate(template_path):
         raise RuntimeError("Could not create docx template.")
 
 
-def render_docx(doc, json_data):
+def render_docx(doc, json_data, unsafe=False):
     try:
-        doc.render(json_data)
+        doc.render(json_data, jinja_env=Environment() if unsafe else None)
         return doc
     except TemplateError:
         raise RuntimeError("An error ocurred while trying to render the docx")
@@ -162,7 +173,7 @@ def main():
         validate_all_args(parsed_args)
         json_data = get_json_data(os.path.abspath(parsed_args[JSON_ARG]))
         doc = make_docxtemplate(os.path.abspath(parsed_args[TEMPLATE_ARG]))
-        doc = render_docx(doc, json_data)
+        doc = render_docx(doc, json_data, parsed_args[UNSAFE_ARG])
         save_file(doc, parsed_args)
     except RuntimeError as e:
         print("Error: " + e.__str__(), file=sys.stderr)

@@ -108,15 +108,21 @@ python -m docform template.docx data.json output.docx
 
 Use `-o` to overwrite an existing output file and `-q` for quiet mode.
 
-## Rendering untrusted templates
+## Sandboxed rendering
 
-Templates run Jinja2 code. If your users can upload their own templates, render them with a sandboxed environment:
+Templates run Jinja2 code, so by default Docform renders them in Jinja2's `SandboxedEnvironment`. Normal template features work, but a template can't reach Python internals like `__globals__` or `__class__`, and trying raises `jinja2.exceptions.SecurityError`.
+
+If you pass your own `jinja_env`, Docform uses it as is. Use a `SandboxedEnvironment` there too unless every template is trusted:
 
 ```python
 from jinja2.sandbox import SandboxedEnvironment
 
-doc.render(context, jinja_env=SandboxedEnvironment(autoescape=True))
+env = SandboxedEnvironment(autoescape=True)
+env.filters["shout"] = str.upper
+doc.render(context, jinja_env=env)
 ```
+
+To turn the sandbox off for templates you fully trust, pass `jinja_env=jinja2.Environment()`, or `--unsafe` on the command line.
 
 ## Formats
 

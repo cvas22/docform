@@ -3,6 +3,9 @@ Unreleased
 
 - Preserve tabs and line breaks between the characters of an escaped delimiter in Word templates.
 - Allow ``%`` and ``}`` inside ``{%p %}``, ``{%tr %}``, ``{%tc %}`` and ``{%r %}`` expressions.
+- Render templates in Jinja2's ``SandboxedEnvironment`` by default, so a template can't reach
+  Python internals. A ``jinja_env`` you pass is still used as is. Pass ``jinja2.Environment()``,
+  or ``--unsafe`` on the command line, to render trusted templates without the sandbox.
 
 0.21.0 (2026-11-15)
 -------------------
