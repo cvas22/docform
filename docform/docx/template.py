@@ -26,6 +26,7 @@ except ImportError:
     # cgi.escape is deprecated in python 3.7
     from cgi import escape  # noqa: F401
 import re
+import warnings
 import binascii
 import os
 import zipfile
@@ -552,8 +553,19 @@ class DocxTemplate(object):
     # using of TC tag in for cycle can cause that count of columns does not
     # correspond to real count of columns in row. This function is able to fix it.
     def fix_tables(self, xml):
-        parser = etree.XMLParser(recover=True)
-        tree = etree.fromstring(xml, parser=parser)
+        try:
+            tree = etree.fromstring(xml)
+        except etree.XMLSyntaxError as exc:
+            # Keep going like before, but say so instead of silently
+            # dropping whatever the lenient parser can't make sense of.
+            warnings.warn(
+                "The rendered document is not valid XML ({}), so some content "
+                "may be missing from the output. This usually means a value "
+                "contains a character like < or &. Render with "
+                "autoescape=True to escape them.".format(exc),
+                stacklevel=3,
+            )
+            tree = etree.fromstring(xml, parser=etree.XMLParser(recover=True))
         # get namespace
         ns = "{" + tree.nsmap["w"] + "}"
         # walk trough xml and find table

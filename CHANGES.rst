@@ -8,6 +8,8 @@ Unreleased
   or ``--unsafe`` on the command line, to render trusted templates without the sandbox.
 - Attributes of the underlying python-docx document, like ``tpl.paragraphs``, work before
   ``render()`` and show the rendered content after it.
+- Warn when the rendered document isn't valid XML, for example a value with ``<`` rendered
+  without autoescape, instead of silently dropping the content after it.
 
 0.21.0 (2026-11-15)
 -------------------

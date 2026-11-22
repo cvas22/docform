@@ -208,6 +208,18 @@ def test_xml_special_chars_need_autoescape(make_docx):
     assert body_text(saved(tpl)) == ["a < b & c"]
 
 
+def test_invalid_xml_warns_instead_of_dropping_silently(make_docx):
+    tpl = DocxTemplate(make_docx(["{%p for x in items %}", "{{ x }}", "{%p endfor %}", "after"]))
+    with pytest.warns(UserWarning, match="autoescape=True"):
+        tpl.render({"items": ["1", "<NA>", "3"]})
+
+
+def test_valid_render_does_not_warn(make_docx, recwarn):
+    tpl = DocxTemplate(make_docx(["{{ s }}"]))
+    tpl.render({"s": "a < b"}, autoescape=True)
+    assert not [w for w in recwarn if issubclass(w.category, UserWarning)]
+
+
 def test_render_twice_with_init(make_docx):
     tpl = DocxTemplate(make_docx(["Hi {{ n }}"]))
     tpl.render({"n": 1})
