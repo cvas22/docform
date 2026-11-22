@@ -306,3 +306,30 @@ def test_public_api_and_alias():
     assert docform.Template is docform.DocxTemplate
     assert docform.docx.Template is docform.docx.DocxTemplate
     assert isinstance(docform.__version__, str)
+
+
+def test_libreoffice_core_properties_are_not_duplicated(make_docx, tmp_path):
+    import collections
+    import zipfile
+
+    src = make_docx(["{{ x }}"], title="Report {{ x }}")
+    lo = tmp_path / "libreoffice.docx"
+    with zipfile.ZipFile(str(src)) as zin, zipfile.ZipFile(str(lo), "w") as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "_rels/.rels":
+                data = data.replace(
+                    b"package/2006/relationships/metadata/core-properties",
+                    b"officedocument/2006/relationships/metadata/core-properties",
+                )
+            zout.writestr(item, data)
+
+    tpl = DocxTemplate(str(lo))
+    tpl.render({"x": "ok"})
+    out = tmp_path / "out.docx"
+    tpl.save(str(out))
+
+    with zipfile.ZipFile(str(out)) as z:
+        names = collections.Counter(z.namelist())
+    assert names["docProps/core.xml"] == 1
+    assert Document(str(out)).core_properties.title == "Report ok"

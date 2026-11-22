@@ -13,6 +13,8 @@ Unreleased
 - ``replace_pic()`` only replaces the named picture, not every copy of the same image.
 - ``{% vm %}`` and ``{% hm %}`` no longer corrupt the table when the cell's paragraph has
   properties like ``w:textAlignment``, and ``{%-``/``-%}`` next to a table no longer drop its tags.
+- Templates saved by LibreOffice no longer get a second ``docProps/core.xml``, which made
+  LibreOffice refuse the generated file.
 
 0.21.0 (2026-11-15)
 -------------------
