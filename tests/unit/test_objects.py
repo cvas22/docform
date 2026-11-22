@@ -124,3 +124,58 @@ def test_subdoc_from_file(make_docx, tmp_path):
     tpl = DocxTemplate(make_docx(["{{p sd }}"]))
     tpl.render({"sd": tpl.new_subdoc(str(other_path))})
     assert "merged in" in body_text(saved(tpl))
+
+
+def _pictures(path):
+    """Map each picture's name to the bytes of the image it shows."""
+    doc = Document(str(path))
+    part = doc.part
+    out = {}
+    for pic in doc.element.body.xpath(".//pic:pic"):
+        name = pic.xpath("./pic:nvPicPr/pic:cNvPr/@name")[0]
+        rid = pic.xpath("./pic:blipFill/a:blip/@r:embed")[0]
+        out[name] = part.related_parts[rid].blob
+    return out, part
+
+
+def _two_copies_of_one_image(tmp_path):
+    doc = Document()
+    for _ in range(2):
+        doc.add_picture(io.BytesIO(PNG), width=Mm(10))
+    for name, el in zip(("img1", "img2"), doc.element.body.xpath(".//pic:cNvPr")):
+        el.set("name", name)
+    path = tmp_path / "pics.docx"
+    doc.save(str(path))
+    return path
+
+
+def test_replace_pic_leaves_identical_images_alone(tmp_path):
+    other = _png(6, 6)
+    tpl = DocxTemplate(str(_two_copies_of_one_image(tmp_path)))
+    tpl.replace_pic("img1", io.BytesIO(other))
+    tpl.render({})
+    out = tmp_path / "out.docx"
+    tpl.save(str(out))
+
+    pics, _ = _pictures(out)
+    assert pics == {"img1": other, "img2": PNG}
+
+
+def test_replace_pic_drops_the_unused_image(tmp_path):
+    doc = Document()
+    doc.add_picture(io.BytesIO(PNG), width=Mm(10))
+    doc.element.body.xpath(".//pic:cNvPr")[0].set("name", "only")
+    path = tmp_path / "one.docx"
+    doc.save(str(path))
+
+    other = _png(6, 6)
+    tpl = DocxTemplate(str(path))
+    tpl.replace_pic("only", io.BytesIO(other))
+    tpl.render({})
+    out = tmp_path / "out.docx"
+    tpl.save(str(out))
+
+    pics, part = _pictures(out)
+    assert pics == {"only": other}
+    images = [p for p in part.related_parts.values() if p.content_type.startswith("image/")]
+    assert len(images) == 1
