@@ -186,6 +186,9 @@ In order to display ``{%``, ``%}``, ``{{`` or ``}}``, one can use::
 
    {_%, %_}, {_{ or  }_}
 
+The characters of an escaped delimiter can have different Word formatting.
+A tab or line break between the characters interrupts the delimiter and is preserved.
+
 Tables
 ......
 

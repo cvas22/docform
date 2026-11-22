@@ -1,3 +1,8 @@
+Unreleased
+----------
+
+- Preserve tabs and line breaks between the characters of an escaped delimiter in Word templates.
+
 0.21.0 (2026-11-15)
 -------------------
 First release as Docform. Rendering output matches docxtpl 0.20.2.
