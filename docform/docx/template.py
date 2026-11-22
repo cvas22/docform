@@ -428,19 +428,60 @@ class DocxTemplate(object):
         if jinja_env is None:
             jinja_env = SandboxedEnvironment()
 
-        for section in self.docx.sections:
-            for part in section.part.package.parts:
-                if part.content_type == (
-                    "application/vnd.openxmlformats-officedocument"
-                    ".wordprocessingml.footnotes+xml"
-                ):
-                    xml = self.patch_xml(
-                        part.blob.decode("utf-8")
-                        if isinstance(part.blob, bytes)
-                        else part.blob
+        # Every section shares the same package, so render each part once.
+        # Rendering twice would also evaluate escaped {_{ }_} delimiters.
+        for part in self.docx.part.package.iter_parts():
+            if part.content_type == self.FOOTNOTES_CONTENT_TYPE:
+                xml = self.patch_xml(
+                    part.blob.decode("utf-8")
+                    if isinstance(part.blob, bytes)
+                    else part.blob
+                )
+                xml = self.render_xml_part(xml, part, context, jinja_env)
+                part._blob = xml.encode("utf-8")
+
+    FOOTNOTES_CONTENT_TYPE = (
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml"
+    )
+    ENDNOTES_CONTENT_TYPE = (
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml"
+    )
+
+    def drop_unreferenced_notes(self):
+        """Remove footnotes and endnotes whose reference was rendered away.
+
+        A {%p if %} can drop the paragraph holding a footnote reference while
+        the note itself stays in footnotes.xml. Word ignores it, but LibreOffice
+        then pairs the remaining references with the wrong notes.
+        """
+        w = docx.oxml.ns.nsmap["w"]
+        root = self.docx.element
+        kinds = (
+            (self.FOOTNOTES_CONTENT_TYPE, "footnote"),
+            (self.ENDNOTES_CONTENT_TYPE, "endnote"),
+        )
+        for content_type, kind in kinds:
+            used = set(
+                etree._Element.xpath(
+                    root, "//w:%sReference/@w:id" % kind, namespaces={"w": w}
+                )
+            )
+            for part in self.docx.part.package.iter_parts():
+                if part.content_type != content_type:
+                    continue
+                notes = etree.fromstring(part.blob)
+                dropped = False
+                for note in notes.findall("{%s}%s" % (w, kind)):
+                    # separator and continuation notes have a type, keep them
+                    if note.get("{%s}type" % w, "normal") != "normal":
+                        continue
+                    if note.get("{%s}id" % w) not in used:
+                        notes.remove(note)
+                        dropped = True
+                if dropped:
+                    part._blob = etree.tostring(
+                        notes, xml_declaration=True, encoding="UTF-8", standalone=True
                     )
-                    xml = self.render_xml_part(xml, part, context, jinja_env)
-                    part._blob = xml.encode("utf-8")
 
     def resolve_listing(self, xml):
 
@@ -580,6 +621,7 @@ class DocxTemplate(object):
         self.render_properties(context, jinja_env)
 
         self.render_footnotes(context, jinja_env)
+        self.drop_unreferenced_notes()
 
         # set rendered flag
         self.is_rendered = True

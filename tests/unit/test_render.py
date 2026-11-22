@@ -1,6 +1,9 @@
+import io
 import os
+from pathlib import Path
 
 import pytest
+from lxml import etree
 from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
@@ -333,3 +336,88 @@ def test_libreoffice_core_properties_are_not_duplicated(make_docx, tmp_path):
         names = collections.Counter(z.namelist())
     assert names["docProps/core.xml"] == 1
     assert Document(str(out)).core_properties.title == "Report ok"
+
+
+FOOTNOTES_TPL = Path(__file__).resolve().parents[1] / "templates" / "footnotes_tpl.docx"
+W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+
+
+def _footnote_doc(tmp_path, body_paragraphs, footnotes):
+    """Rebuild footnotes_tpl.docx with the given body and footnote texts.
+
+    body_paragraphs: list of plain text or ("text", footnote_id) tuples.
+    footnotes: {id: text}
+    """
+    import zipfile
+    from xml.sax.saxutils import escape
+
+    def para(item):
+        if isinstance(item, tuple):
+            text, fid = item
+            return (
+                '<w:p><w:r><w:t xml:space="preserve">%s</w:t></w:r>'
+                '<w:r><w:rPr><w:rStyle w:val="FootnoteReference"/></w:rPr>'
+                '<w:footnoteReference w:id="%s"/></w:r></w:p>' % (escape(text), fid)
+            )
+        return '<w:p><w:r><w:t xml:space="preserve">%s</w:t></w:r></w:p>' % escape(item)
+
+    out = tmp_path / "fn.docx"
+    with zipfile.ZipFile(str(FOOTNOTES_TPL)) as zin, zipfile.ZipFile(str(out), "w") as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename).decode("utf-8")
+            if item.filename == "word/document.xml":
+                start = data.index("<w:body>") + len("<w:body>")
+                sect = data.index("<w:sectPr", start)
+                data = data[:start] + "".join(map(para, body_paragraphs)) + data[sect:]
+            elif item.filename == "word/footnotes.xml":
+                head, tail = data.split('<w:footnote w:id="1"', 1)
+                tail = tail.split("</w:footnote>", 1)[1]
+                notes = "".join(
+                    '<w:footnote w:id="%s"><w:p><w:r><w:t xml:space="preserve">%s'
+                    "</w:t></w:r></w:p></w:footnote>" % (fid, escape(text))
+                    for fid, text in footnotes.items()
+                )
+                data = head + notes + tail
+            zout.writestr(item, data.encode("utf-8"))
+    return out
+
+
+def _footnotes(doc):
+    import zipfile
+
+    with zipfile.ZipFile(io.BytesIO(_saved_bytes(doc))) as z:
+        root = etree.fromstring(z.read("word/footnotes.xml"))
+    notes = {}
+    for note in root.findall("{%s}footnote" % W_NS):
+        if note.get("{%s}type" % W_NS, "normal") == "normal":
+            notes[note.get("{%s}id" % W_NS)] = "".join(note.itertext())
+    return notes
+
+
+def _saved_bytes(tpl):
+    stream = io.BytesIO()
+    tpl.save(stream)
+    return stream.getvalue()
+
+
+def test_footnote_of_a_removed_paragraph_is_dropped(tmp_path):
+    path = _footnote_doc(
+        tmp_path,
+        [("kept", 1), "{%p if False %}", ("gone", 2), "{%p endif %}", ("also kept", 3)],
+        {1: "one", 2: "two", 3: "three"},
+    )
+    tpl = DocxTemplate(str(path))
+    tpl.render({})
+    assert _footnotes(tpl) == {"1": "one", "3": "three"}
+
+
+def test_footnotes_are_rendered_once_with_several_sections(tmp_path):
+    path = _footnote_doc(tmp_path, [("text", 1)], {1: "{_{ x }_} and {{ y }}"})
+    doc = Document(str(path))
+    doc.add_section()
+    doc.add_paragraph("second section")
+    doc.save(str(path))
+
+    tpl = DocxTemplate(str(path))
+    tpl.render({"x": "evaluated", "y": "Y"})
+    assert _footnotes(tpl) == {"1": "{{ x }} and Y"}

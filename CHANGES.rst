@@ -19,6 +19,9 @@ Unreleased
   end of the document or of a table cell no longer makes Word reject the file.
 - Lists numbered through their paragraph style stay one list when a subdoc is nested in
   another subdoc, instead of the first item splitting off and the count restarting.
+- Footnotes and endnotes whose reference was removed by a ``{%p if %}`` are dropped, so
+  LibreOffice no longer pairs the remaining references with the wrong notes. Footnotes are
+  also rendered once instead of once per section, which evaluated escaped ``{_{ }_}``.
 
 0.21.0 (2026-11-15)
 -------------------
