@@ -1,5 +1,5 @@
-0.22.0 (2026-11-22)
--------------------
+1.0.0 (2026-11-22)
+------------------
 
 - IMPORTANT: templates are now rendered in Jinja2's ``SandboxedEnvironment`` by default, so a
   template can't reach Python internals. A ``jinja_env`` you pass is still used as is. Pass
