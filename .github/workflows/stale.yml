@@ -1,0 +1,35 @@
+name: stale
+
+on:
+  schedule:
+    - cron: "30 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stale:
+    name: Mark inactive issues and PRs
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/stale@v11
+        with:
+          days-before-issue-stale: 90
+          days-before-pr-stale: 60
+          # Only mark as stale, never close.
+          days-before-close: -1
+          stale-issue-label: stale
+          stale-pr-label: stale
+          exempt-issue-labels: pinned,security,help wanted,good first issue
+          exempt-pr-labels: pinned,security,dependencies,port
+          exempt-all-milestones: true
+          stale-issue-message: >
+            This issue hasn't had any activity in 90 days, so it's been marked
+            stale. Any new comment or update removes the label.
+          stale-pr-message: >
+            This PR hasn't had any activity in 60 days, so it's been marked
+            stale. Any new comment or push removes the label.
