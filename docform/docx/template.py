@@ -87,10 +87,10 @@ class DocxTemplate(object):
         strip all unnecessary xml tags, manage table cell background color and colspan,
         unescape html entities, etc..."""
 
-        # Between adjacent text nodes, allow run boundaries and font properties.
-        # Other elements, such as tabs and line breaks, interrupt the delimiter.
-        run_markup = r"</?w:r\b[^>]*>|<w:rPr/>|<w:rPr>(?:<[^<>]+/>)*</w:rPr>"
-        split_run_gap = rf"(?:</w:t>(?:{run_markup})*<w:t\b[^>]*>)?"
+        # Word may insert proofing marks, bookmarks or run formatting between
+        # text nodes. Paragraph boundaries, tabs and line breaks end a delimiter.
+        boundary = r"</?w:(?:p|tab|br|cr)(?=[\s/>])"
+        split_run_gap = rf"(?:</w:t>(?:(?!{boundary})<[^>]+>)*<w:t(?: [^>]*)?>)?"
         for escaped_delimiter in ("{_{", "}_}", "{_%", "%_}"):
             pattern = split_run_gap.join(map(re.escape, escaped_delimiter))
             src_xml = re.sub(pattern, escaped_delimiter, src_xml)

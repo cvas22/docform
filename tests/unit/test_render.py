@@ -1,5 +1,7 @@
 import pytest
 from docx import Document
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
 from jinja2 import Environment
 from jinja2.exceptions import TemplateSyntaxError, UndefinedError
 from jinja2 import StrictUndefined
@@ -32,6 +34,23 @@ def test_escaped_delimiter_across_runs(tmp_path, separator, expected):
     tpl = DocxTemplate(path)
     tpl.render({})
     assert body_text(saved(tpl)) == ["left " + expected + " right"]
+
+
+def test_escaped_delimiter_across_proofing_marks(tmp_path):
+    doc = Document()
+    paragraph = doc.add_paragraph()
+    paragraph.add_run("left }")
+    for mark, text in (("spellStart", "_"), ("spellEnd", "} right")):
+        marker = OxmlElement("w:proofErr")
+        marker.set(qn("w:type"), mark)
+        paragraph._p.append(marker)
+        paragraph.add_run(text)
+    path = tmp_path / "proofing.docx"
+    doc.save(path)
+
+    tpl = DocxTemplate(path)
+    tpl.render({})
+    assert body_text(saved(tpl)) == ["left }} right"]
 
 
 def test_missing_variable_renders_empty(make_docx):
