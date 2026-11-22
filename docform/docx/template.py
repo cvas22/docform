@@ -202,11 +202,22 @@ class DocxTemplate(object):
             flags=re.DOTALL,
         )
 
+        # Merging never crosses a table, row or cell edge, that would drop the
+        # table's own tags. The tag then stays put and only whitespace goes.
+        table_edge = r"</?w:(?:tbl|tr|tc)[\s>]"
         # {%- will merge with previous paragraph text
-        src_xml = re.sub(r"</w:t>(?:(?!</w:t>).)*?{%-", "{%", src_xml, flags=re.DOTALL)
+        src_xml = re.sub(
+            r"</w:t>(?:(?!</w:t>|" + table_edge + r").)*?{%-",
+            "{%",
+            src_xml,
+            flags=re.DOTALL,
+        )
         # -%} will merge with next paragraph text
         src_xml = re.sub(
-            r"-%}(?:(?!<w:t[ >]|{%|{{).)*?<w:t[^>]*?>", "%}", src_xml, flags=re.DOTALL
+            r"-%}(?:(?!<w:t[ >]|{%|{{|" + table_edge + r").)*?<w:t(?:\s[^>]*)?>",
+            "%}",
+            src_xml,
+            flags=re.DOTALL,
         )
 
         for y in ["tr", "tc", "p", "r"]:
@@ -245,7 +256,7 @@ class DocxTemplate(object):
                 )
 
             return re.sub(
-                r"(</w:tcPr[ >].*?<w:t(?:.*?)>)(.*?)(?:{%\s*vm\s*%})(.*?)(</w:t>)",
+                r"(</w:tcPr[ >].*?<w:t(?:\s[^>]*)?>)(.*?)(?:{%\s*vm\s*%})(.*?)(</w:t>)",
                 v_merge,
                 m.group(),
                 # Everything between ``</w:tc>`` and ``</w:tc>`` with ``{% vm %}`` inside.
@@ -302,7 +313,7 @@ class DocxTemplate(object):
             else:
                 # There're no ``gridSpan``, add one.
                 xml = re.sub(
-                    r"(</w:tcPr[ >].*?<w:t(?:.*?)>)(.*?)(?:{%\s*hm\s*%})(.*?)(</w:t>)",
+                    r"(</w:tcPr[ >].*?<w:t(?:\s[^>]*)?>)(.*?)(?:{%\s*hm\s*%})(.*?)(</w:t>)",
                     without_gridspan,
                     xml_to_patch,
                     flags=re.DOTALL,
