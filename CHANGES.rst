@@ -15,6 +15,8 @@ Unreleased
   properties like ``w:textAlignment``, and ``{%-``/``-%}`` next to a table no longer drop its tags.
 - Templates saved by LibreOffice no longer get a second ``docProps/core.xml``, which made
   LibreOffice refuse the generated file.
+- A subdoc that ends with a table gets an empty paragraph after it, so ``{{p subdoc }}`` at the
+  end of the document or of a table cell no longer makes Word reject the file.
 
 0.21.0 (2026-11-15)
 -------------------

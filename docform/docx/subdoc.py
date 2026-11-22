@@ -171,6 +171,10 @@ class Subdoc(object):
         wrapper = etree.Element(destination_body.tag, nsmap=destination_body.nsmap)
         for element in body:
             wrapper.append(deepcopy(element))
+        # Word needs a paragraph after a table at the end of a cell or of the
+        # document, and {{p subdoc }} can put the subdoc's last table there.
+        if wrapper[-1].tag == "{%s}tbl" % nsmap["w"]:
+            etree.SubElement(wrapper, "{%s}p" % nsmap["w"])
 
         xml = etree.tostring(wrapper, encoding="unicode", pretty_print=False)
         return xml.partition(">")[2].rpartition("</")[0]
