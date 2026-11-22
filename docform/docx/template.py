@@ -65,6 +65,11 @@ class DocxTemplate(object):
         self.is_saved = False
 
     def __getattr__(self, name):
+        # Forward unknown attributes to the python-docx Document, loading it
+        # first so they also work before render() has been called.
+        if name == "docx" or name.startswith("__"):
+            raise AttributeError(name)
+        self.init_docx(reload=False)
         return getattr(self.docx, name)
 
     def xml_to_string(self, xml, encoding="unicode"):
@@ -465,6 +470,10 @@ class DocxTemplate(object):
         root = self.docx._element
         body = root.body
         root.replace(body, tree)
+        # python-docx caches its body wrapper, drop it so reads after
+        # render() see the new body instead of the template one.
+        if hasattr(self.docx, "_Document__body"):
+            self.docx._Document__body = None
 
     def get_headers_footers(self, uri):
         for relKey, val in self.docx._part.rels.items():
