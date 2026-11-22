@@ -421,3 +421,72 @@ def test_footnotes_are_rendered_once_with_several_sections(tmp_path):
     tpl = DocxTemplate(str(path))
     tpl.render({"x": "evaluated", "y": "Y"})
     assert _footnotes(tpl) == {"1": "{{ x }} and Y"}
+
+
+def _body_doc(tmp_path, body_xml):
+    """Save a document whose body is the given paragraph XML."""
+    import zipfile
+
+    base = tmp_path / "base.docx"
+    Document().save(str(base))
+    out = tmp_path / "bm.docx"
+    with zipfile.ZipFile(str(base)) as zin, zipfile.ZipFile(str(out), "w") as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "word/document.xml":
+                xml = data.decode("utf-8")
+                start = xml.index("<w:body>") + len("<w:body>")
+                xml = xml[:start] + body_xml + xml[xml.index("<w:sectPr", start):]
+                data = xml.encode("utf-8")
+            zout.writestr(item, data)
+    return out
+
+
+def _run(text):
+    return '<w:r><w:t xml:space="preserve">%s</w:t></w:r>' % text
+
+
+BM_START = '<w:bookmarkStart w:id="7" w:name="_Ref1"/>'
+BM_END = '<w:bookmarkEnd w:id="7"/>'
+
+
+def _bookmarks(doc):
+    body = doc.element.body
+    return (
+        body.xpath(".//w:bookmarkStart/@w:name"),
+        body.xpath(".//w:bookmarkEnd/@w:id"),
+    )
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        # start between the runs of a tag Word split
+        "<w:p>" + _run("a {% if x ") + BM_START + _run("%} b {% endif %}") + BM_END + "</w:p>",
+        # end inside the runs of the closing tag
+        "<w:p>" + BM_START + _run("a {% if x %} b {% en") + BM_END + _run("dif %}") + "</w:p>",
+        # on a paragraph tag line
+        "<w:p>" + BM_START + _run("{%p if x %}") + BM_END + "</w:p><w:p>" + _run("b")
+        + "</w:p><w:p>" + _run("{%p endif %}") + "</w:p>",
+        # in the span {%- merges away
+        "<w:p>" + BM_START + _run("a") + BM_END + "</w:p><w:p>" + _run("{%- if x %} b{% endif %}") + "</w:p>",
+    ],
+    ids=["inside-open-tag", "inside-close-tag", "paragraph-tag", "dash-merge"],
+)
+def test_bookmarks_survive_tag_clean_up(tmp_path, body):
+    tpl = DocxTemplate(str(_body_doc(tmp_path, body)))
+    tpl.render({"x": True})
+    assert _bookmarks(saved(tpl)) == (["_Ref1"], ["7"])
+
+
+def test_bookmark_in_a_loop_is_kept_once(tmp_path):
+    body = (
+        "<w:p>" + _run("{%p for i in items %}") + "</w:p>"
+        "<w:p>" + BM_START + _run("{{ i }}") + BM_END + "</w:p>"
+        "<w:p>" + _run("{%p endfor %}") + "</w:p>"
+    )
+    tpl = DocxTemplate(str(_body_doc(tmp_path, body)))
+    tpl.render({"items": ["a", "b", "c"]})
+    out = saved(tpl)
+    assert body_text(out) == ["a", "b", "c"]
+    assert _bookmarks(out) == (["_Ref1"], ["7"])

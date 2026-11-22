@@ -22,6 +22,10 @@ Unreleased
 - Footnotes and endnotes whose reference was removed by a ``{%p if %}`` are dropped, so
   LibreOffice no longer pairs the remaining references with the wrong notes. Footnotes are
   also rendered once instead of once per section, which evaluated escaped ``{_{ }_}``.
+- Bookmarks survive template tags, so Word cross-references no longer show "Error! Reference
+  source not found". They used to be dropped when Word put them between the runs of a tag,
+  on a ``{%p %}``/``{%tr %}``/``{%tc %}`` line or next to ``{%-``/``-%}``. A bookmark repeated by
+  a loop is kept once, since Word needs unique bookmark names.
 
 0.21.0 (2026-11-15)
 -------------------
