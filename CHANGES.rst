@@ -2,6 +2,7 @@ Unreleased
 ----------
 
 - Preserve tabs and line breaks between the characters of an escaped delimiter in Word templates.
+- Allow ``%`` and ``}`` inside ``{%p %}``, ``{%tr %}``, ``{%tc %}`` and ``{%r %}`` expressions.
 
 0.21.0 (2026-11-15)
 -------------------

@@ -88,6 +88,19 @@ def test_paragraph_for_loop(make_docx):
     assert body_text(saved(tpl)) == ["- a", "- b", "- c"]
 
 
+def test_paragraph_tag_with_percent_and_brace(make_docx):
+    tpl = DocxTemplate(make_docx([
+        "{%p set d = {'label': 'even'} %}",
+        "{%p for i in range(4) %}",
+        "{%p if i % 2 == 0 %}",
+        "{{ d.label }} {{ i }}",
+        "{%p endif %}",
+        "{%p endfor %}",
+    ]))
+    tpl.render({})
+    assert body_text(saved(tpl)) == ["even 0", "even 2"]
+
+
 def test_table_row_loop(make_docx):
     table = [
         ["Name", "Qty"],
