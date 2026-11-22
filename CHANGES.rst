@@ -1,3 +1,8 @@
+1.0.2 (2026-11-22)
+------------------
+
+- List only the Docform maintainer as the package author on PyPI.
+
 1.0.1 (2026-11-22)
 ------------------
 

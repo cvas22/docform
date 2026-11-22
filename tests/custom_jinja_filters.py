@@ -2,7 +2,7 @@
 """
 Created : 2015-03-12
 
-@author: sandeeprah, Eric Lapouyade
+@author: sandeeprah
 """
 
 from docform import DocxTemplate

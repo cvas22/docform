@@ -158,7 +158,7 @@ Docform is maintained by [Srinivas Chippagiri](https://github.com/cvas22).
 
 ## Credits
 
-Docform started as a fork of [python-docx-template](https://github.com/elapouya/python-docx-template) by Eric Lapouyade and builds on [python-docx](https://github.com/python-openxml/python-docx) and [Jinja2](https://github.com/pallets/jinja).
+Docform builds on [python-docx](https://github.com/python-openxml/python-docx) and [Jinja2](https://github.com/pallets/jinja).
 
 ## License
 
