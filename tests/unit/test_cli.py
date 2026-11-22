@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -39,6 +40,21 @@ def test_cli_overwrite_flag(make_docx, tmp_path):
         result = run_cli(tpl, data, out, "-o", "-q")
         assert result.returncode == 0, result.stderr
     assert body_text(Document(str(out))) == ["v2"]
+
+
+def test_cli_sandbox_and_unsafe_flag(make_docx, tmp_path):
+    tpl = make_docx(["{{ cycler.__init__.__globals__.os.name }}"])
+    data = tmp_path / "data.json"
+    data.write_text("{}", encoding="utf-8")
+    out = tmp_path / "out.docx"
+
+    result = run_cli(tpl, data, out, "-q")
+    assert result.returncode == 1
+    assert not out.exists()
+
+    result = run_cli(tpl, data, out, "-q", "--unsafe")
+    assert result.returncode == 0, result.stderr
+    assert body_text(Document(str(out))) == [os.name]
 
 
 def test_cli_missing_template_fails(tmp_path):

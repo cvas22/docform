@@ -448,14 +448,14 @@ Jinja custom filters
 By this way you will be able to add some custom jinja filters::
 
     from docform import DocxTemplate
-    import jinja2
+    from jinja2.sandbox import SandboxedEnvironment
 
     def multiply_by(value, by):
        return value * by
 
     doc = DocxTemplate("my_word_template.docx")
     context = { 'price_dollars' : 5.00 }
-    jinja_env = jinja2.Environment()
+    jinja_env = SandboxedEnvironment()
     jinja_env.filters['multiply_by'] = multiply_by
     doc.render(context,jinja_env)
     doc.save("generated_doc.docx")
@@ -464,13 +464,22 @@ Then in your template, you will be able to use::
 
     Euros price : {{ price_dollars|multiply_by(0.88) }}
 
+Sandboxed rendering
+-------------------
+
+Without ``jinja_env``, templates are rendered in Jinja2's ``SandboxedEnvironment``, so a template
+can't reach Python internals such as ``__globals__``. Trying raises ``jinja2.exceptions.SecurityError``.
+An environment you pass is used as is, so keep it sandboxed when templates come from untrusted users.
+For fully trusted templates, ``jinja2.Environment()`` turns the sandbox off. On the command line,
+use ``--unsafe``.
+
 
 Command-line execution
 ----------------------
 
 One can use `docform` module directly on command line to generate a docx from a template and a json file as a context::
 
-   usage: python -m docform [-h] [-o] [-q] template_path json_path output_filename
+   usage: python -m docform [-h] [-o] [-q] [--unsafe] template_path json_path output_filename
 
    Make docx file from existing template docx and json data.
 
@@ -484,6 +493,9 @@ One can use `docform` module directly on command line to generate a docx from a 
      -o, --overwrite  If output file already exists, overwrites without asking
                       for confirmation
      -q, --quiet      Do not display unnecessary messages
+     --unsafe         Render without the Jinja2 sandbox. Only use this for
+                      templates you trust, since they can then run any Python
+                      code.
 
 
 See tests/module_execute.py for an example.

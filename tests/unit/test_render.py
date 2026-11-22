@@ -1,9 +1,11 @@
+import os
+
 import pytest
 from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from jinja2 import Environment
-from jinja2.exceptions import TemplateSyntaxError, UndefinedError
+from jinja2.exceptions import SecurityError, TemplateSyntaxError, UndefinedError
 from jinja2 import StrictUndefined
 
 import docform
@@ -163,6 +165,33 @@ def test_header_footer_and_properties(make_docx):
     assert doc.sections[0].header.paragraphs[0].text == "head 42"
     assert doc.sections[0].footer.paragraphs[0].text == "foot 42"
     assert doc.core_properties.title == "Report 42"
+
+
+UNSAFE_EXPR = "{{ cycler.__init__.__globals__.os.name }}"
+
+
+@pytest.mark.parametrize("where", ["body", "header", "footer", "title"])
+def test_sandboxed_by_default(make_docx, where):
+    tpl = DocxTemplate(make_docx(**{
+        "paragraphs": [UNSAFE_EXPR] if where == "body" else ["ok"],
+        "header": UNSAFE_EXPR if where == "header" else None,
+        "footer": UNSAFE_EXPR if where == "footer" else None,
+        "title": UNSAFE_EXPR if where == "title" else None,
+    }))
+    with pytest.raises(SecurityError):
+        tpl.render({})
+
+
+def test_sandboxed_with_autoescape(make_docx):
+    tpl = DocxTemplate(make_docx([UNSAFE_EXPR]))
+    with pytest.raises(SecurityError):
+        tpl.render({}, autoescape=True)
+
+
+def test_plain_environment_opts_out_of_sandbox(make_docx):
+    tpl = DocxTemplate(make_docx([UNSAFE_EXPR]))
+    tpl.render({}, jinja_env=Environment())
+    assert body_text(saved(tpl)) == [os.name]
 
 
 def test_custom_filter(make_docx):

@@ -11,7 +11,6 @@ Docform's goal is a dependable way to fill document templates with data from Pyt
 ## Next
 
 - Type hints across the public API
-- Safer defaults for untrusted templates, such as an opt-in sandboxed rendering mode
 - Clearer errors that point to where in the template rendering failed
 - Documentation published as a website
 
