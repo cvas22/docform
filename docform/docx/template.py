@@ -53,10 +53,33 @@ class DocxTemplate(object):
         self.is_saved = False
         self.allow_missing_pics = False
 
+    # LibreOffice links the core properties with this relationship type
+    # instead of the standard one, so python-docx doesn't find them.
+    LIBREOFFICE_CORE_PROPERTIES = (
+        "http://schemas.openxmlformats.org/officedocument/2006/relationships"
+        "/metadata/core-properties"
+    )
+
     def init_docx(self, reload: bool = True):
         if not self.docx or (self.is_rendered and reload):
             self.docx = Document(self.template_file)
+            self.fix_core_properties_rel()
             self.is_rendered = False
+
+    def fix_core_properties_rel(self):
+        """Relabel a LibreOffice core properties relationship as the standard one.
+
+        Otherwise python-docx adds a second docProps/core.xml when the document
+        properties are rendered, and LibreOffice refuses the file.
+        """
+        rels = self.docx.part.package.rels
+        types = {rel.reltype for rel in rels.values()}
+        if REL_TYPE.CORE_PROPERTIES in types:
+            return
+        for rel in rels.values():
+            if rel.reltype == self.LIBREOFFICE_CORE_PROPERTIES:
+                rel._reltype = REL_TYPE.CORE_PROPERTIES
+                return
 
     def render_init(self):
         self.init_docx()
