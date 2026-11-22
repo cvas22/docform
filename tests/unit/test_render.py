@@ -1,4 +1,5 @@
 import pytest
+from docx import Document
 from jinja2 import Environment
 from jinja2.exceptions import TemplateSyntaxError, UndefinedError
 from jinja2 import StrictUndefined
@@ -13,6 +14,24 @@ def test_variables(make_docx):
     tpl = DocxTemplate(make_docx(["Hello {{ name }}", "Total: {{ order.total }}"]))
     tpl.render({"name": "Ada", "order": {"total": "$12"}})
     assert body_text(saved(tpl)) == ["Hello Ada", "Total: $12"]
+
+
+@pytest.mark.parametrize(
+    ("separator", "expected"), [("", "}}"), ("\t", "}\t_}"), ("\n", "}\n_}")]
+)
+def test_escaped_delimiter_across_runs(tmp_path, separator, expected):
+    doc = Document()
+    paragraph = doc.add_paragraph()
+    paragraph.add_run("left }")
+    paragraph.add_run(separator)
+    paragraph.add_run("_").bold = True
+    paragraph.add_run("} right")
+    path = tmp_path / "delimiter.docx"
+    doc.save(path)
+
+    tpl = DocxTemplate(path)
+    tpl.render({})
+    assert body_text(saved(tpl)) == ["left " + expected + " right"]
 
 
 def test_missing_variable_renders_empty(make_docx):
@@ -142,7 +161,6 @@ def test_save_to_path(make_docx, tmp_path):
     tpl.render({"a": "ok"})
     out = tmp_path / "out.docx"
     tpl.save(out)
-    from docx import Document
 
     assert body_text(Document(str(out))) == ["ok"]
 
