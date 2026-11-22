@@ -121,6 +121,45 @@ def test_table_row_loop(make_docx):
     ]
 
 
+def test_whitespace_control_before_a_table_keeps_the_table(tmp_path):
+    doc = Document()
+    doc.add_paragraph("{% if True -%}")
+    doc.add_table(rows=1, cols=1).cell(0, 0).text = "cell"
+    doc.add_paragraph("{% endif %}after")
+    path = tmp_path / "ws.docx"
+    doc.save(str(path))
+
+    tpl = DocxTemplate(str(path))
+    tpl.render({})
+    out = saved(tpl)
+    assert table_rows(out) == [["cell"]]
+    assert body_text(out)[-1] == "after"
+
+
+def test_vm_with_paragraph_text_alignment(tmp_path):
+    doc = Document()
+    table = doc.add_table(rows=3, cols=2)
+    table.cell(0, 0).text = "{%tr for x in xs %}"
+    table.cell(1, 0).text = "{% vm %}{{ x.g }}"
+    table.cell(1, 1).text = "{{ x.v }}"
+    table.cell(2, 0).text = "{%tr endfor %}"
+    # Word adds this for vertically centered text, and it starts with "w:t"
+    align = OxmlElement("w:textAlignment")
+    align.set(qn("w:val"), "center")
+    table.cell(1, 0).paragraphs[0]._p.get_or_add_pPr().append(align)
+    doc.add_paragraph("after table")
+    path = tmp_path / "vm.docx"
+    doc.save(str(path))
+
+    tpl = DocxTemplate(str(path))
+    tpl.render({"xs": [{"g": "A", "v": n} for n in (1, 2, 3)]})
+    out = saved(tpl)
+    assert [row[1] for row in table_rows(out)] == ["1", "2", "3"]
+    merges = out.element.body.xpath(".//w:tc/w:tcPr/w:vMerge/@w:val")
+    assert merges == ["restart", "continue", "continue"]
+    assert body_text(out) == ["after table"]
+
+
 def test_table_row_loop_with_no_items_leaves_header(make_docx):
     table = [["Name"], ["{%tr for i in items %}"], ["{{ i }}"], ["{%tr endfor %}"]]
     tpl = DocxTemplate(make_docx(table=table))
