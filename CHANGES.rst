@@ -6,6 +6,8 @@ Unreleased
 - Render templates in Jinja2's ``SandboxedEnvironment`` by default, so a template can't reach
   Python internals. A ``jinja_env`` you pass is still used as is. Pass ``jinja2.Environment()``,
   or ``--unsafe`` on the command line, to render trusted templates without the sandbox.
+- Attributes of the underlying python-docx document, like ``tpl.paragraphs``, work before
+  ``render()`` and show the rendered content after it.
 
 0.21.0 (2026-11-15)
 -------------------

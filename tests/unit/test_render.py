@@ -217,6 +217,21 @@ def test_render_twice_with_init(make_docx):
     assert body_text(saved(tpl)) == ["Hi 2"]
 
 
+def test_document_attributes_before_render(make_docx):
+    tpl = DocxTemplate(make_docx(["Hello {{ name }}"], title="T"))
+    assert [p.text for p in tpl.paragraphs] == ["Hello {{ name }}"]
+    assert tpl.core_properties.title == "T"
+
+    tpl.render({"name": "Ada"})
+    assert [p.text for p in tpl.paragraphs] == ["Hello Ada"]
+
+
+def test_missing_attribute_still_raises(make_docx):
+    tpl = DocxTemplate(make_docx(["x"]))
+    with pytest.raises(AttributeError):
+        tpl.no_such_attribute
+
+
 def test_save_to_path(make_docx, tmp_path):
     tpl = DocxTemplate(make_docx(["{{ a }}"]))
     tpl.render({"a": "ok"})
