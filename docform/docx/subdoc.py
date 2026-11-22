@@ -9,7 +9,7 @@ from copy import deepcopy
 
 from docx import Document
 from docx.oxml import CT_SectPr
-from docx.oxml.ns import nsmap
+from docx.oxml.ns import nsmap, qn
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
 from docxcompose.properties import CustomProperties
 from docxcompose.utils import xpath
@@ -62,6 +62,56 @@ class SubdocComposer(Composer):
         self.renumber_docpr_ids()
         self.renumber_nvpicpr_ids()
         self.fix_section_types(doc)
+
+    def reset_reference_mapping(self):
+        super().reset_reference_mapping()
+        # style id -> numPr given to the first paragraph of a restarted list
+        self._style_numbering_restarts = {}
+
+    def restart_first_numbering(self, doc, element):
+        """Restart a style-numbered list for all of its paragraphs.
+
+        docxcompose restarts a list by giving its first paragraph a new numId.
+        When the numbering comes from the paragraph style, only that first
+        paragraph gets it and the rest stay on the old numbering, so the list
+        splits in two. Give the following paragraphs of that style the same
+        numbering.
+        """
+        restarted = self._style_numbering_restarts
+
+        first = self._first_styled_paragraph_props(element)
+        style_id = first[0] if first else None
+        had_num_pr = first is not None and first[1].find(qn("w:numPr")) is not None
+        is_new = style_id is not None and style_id not in self._numbering_restarted
+
+        super().restart_first_numbering(doc, element)
+
+        if is_new and not had_num_pr and style_id in self._numbering_restarted:
+            num_pr = first[1].find(qn("w:numPr"))
+            if num_pr is not None:
+                # docxcompose appends it last, after rPr, which breaks the
+                # schema order Word expects. Put it in its proper place.
+                first[1].remove(num_pr)
+                self._set_num_pr(first[1], num_pr)
+                restarted[style_id] = num_pr
+
+        for p_pr in xpath(element, ".//w:pPr[w:pStyle]"):
+            num_pr = restarted.get(p_pr.find(qn("w:pStyle")).get(qn("w:val")))
+            if num_pr is not None and p_pr.find(qn("w:numPr")) is None:
+                self._set_num_pr(p_pr, num_pr)
+
+    @staticmethod
+    def _set_num_pr(p_pr, num_pr):
+        new = p_pr.get_or_add_numPr()
+        new.get_or_add_ilvl().val = int(num_pr.find(qn("w:ilvl")).get(qn("w:val")))
+        new.get_or_add_numId().val = int(num_pr.find(qn("w:numId")).get(qn("w:val")))
+
+    @staticmethod
+    def _first_styled_paragraph_props(element):
+        props = xpath(element, ".//w:pPr[w:pStyle]")
+        if not props:
+            return None
+        return props[0].find(qn("w:pStyle")).get(qn("w:val")), props[0]
 
     def renumber_ole_objects(self, doc):
         state = getattr(self.doc.part, "_docform_ole_id_state", None)

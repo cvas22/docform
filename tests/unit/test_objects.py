@@ -200,3 +200,41 @@ def test_subdoc_ending_with_a_table_is_followed_by_a_paragraph(tmp_path):
     outer_cell = body.xpath("./w:tbl/w:tr/w:tc")[0]
     assert outer_cell[-1].tag.endswith("}p")
     assert body[-2].tag.endswith("}p")
+
+
+def _list_num_ids(doc):
+    """numId each "item" paragraph ends up with, from its own numPr or its style."""
+    ids = []
+    for p in doc.paragraphs:
+        if not p.text.startswith("item"):
+            continue
+        num = p._p.xpath("./w:pPr/w:numPr/w:numId/@w:val")
+        if not num:
+            num = p.style.element.xpath("./w:pPr/w:numPr/w:numId/@w:val")
+        ids.append(num[0] if num else None)
+    return ids
+
+
+def test_nested_subdoc_keeps_a_style_numbered_list_together(tmp_path):
+    pytest.importorskip("docxcompose")
+    first = Document()
+    first.add_paragraph("{%p for i in items %}")
+    first.add_paragraph("{{ i }}", style="List Number")
+    first.add_paragraph("{%p endfor %}")
+    first.save(str(tmp_path / "first_tpl.docx"))
+    wrap = Document()
+    wrap.add_paragraph("{{p inner }}")
+    wrap.save(str(tmp_path / "wrap_tpl.docx"))
+
+    tpl = DocxTemplate(str(tmp_path / "first_tpl.docx"))
+    tpl.render({"items": ["item 1", "item 2", "item 3"]})
+    previous = tmp_path / "level1.docx"
+    tpl.save(str(previous))
+    for level in (2, 3):
+        tpl = DocxTemplate(str(tmp_path / "wrap_tpl.docx"))
+        tpl.render({"inner": tpl.new_subdoc(str(previous))})
+        previous = tmp_path / ("level%d.docx" % level)
+        tpl.save(str(previous))
+        ids = _list_num_ids(Document(str(previous)))
+        # one list, so one numbering instance for all of its items
+        assert len(ids) == 3 and len(set(ids)) == 1, (level, ids)
