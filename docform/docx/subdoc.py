@@ -57,7 +57,7 @@ class SubdocComposer(Composer):
         self.fix_section_types(doc)
 
     def renumber_ole_objects(self, doc):
-        state = getattr(self.doc.part, "_docxtpl_ole_id_state", None)
+        state = getattr(self.doc.part, "_docform_ole_id_state", None)
         if state is None:
             body = self.doc.element.body
             state = {
@@ -72,7 +72,7 @@ class SubdocComposer(Composer):
                 },
                 "anchor_index": 1,
             }
-            self.doc.part._docxtpl_ole_id_state = state
+            self.doc.part._docform_ole_id_state = state
 
         state["shape_ids"].update(
             xpath(doc.element.body, ".//v:shape/@id")
