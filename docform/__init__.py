@@ -5,7 +5,7 @@ Docform: fill document templates with data.
 Based on python-docx-template by Eric Lapouyade.
 """
 
-__version__ = "0.21.0"
+__version__ = "1.0.0"
 
 # flake8: noqa
 from .docx import InlineImage, Listing, RichText, R, RichTextParagraph, RP

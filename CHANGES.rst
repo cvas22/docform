@@ -1,11 +1,21 @@
-Unreleased
-----------
+1.0.0 (2026-11-22)
+------------------
 
-- Preserve tabs and line breaks between the characters of an escaped delimiter in Word templates.
+- IMPORTANT: templates are now rendered in Jinja2's ``SandboxedEnvironment`` by default, so a
+  template can't reach Python internals. A ``jinja_env`` you pass is still used as is. Pass
+  ``jinja2.Environment()``, or ``--unsafe`` on the command line, to render trusted templates
+  without the sandbox.
+- Escaped delimiters like ``{_{`` work when Word splits them across runs or puts tabs, line
+  breaks, or proofing and layout marks between their characters.
 - Allow ``%`` and ``}`` inside ``{%p %}``, ``{%tr %}``, ``{%tc %}`` and ``{%r %}`` expressions.
-- Render templates in Jinja2's ``SandboxedEnvironment`` by default, so a template can't reach
-  Python internals. A ``jinja_env`` you pass is still used as is. Pass ``jinja2.Environment()``,
-  or ``--unsafe`` on the command line, to render trusted templates without the sandbox.
+- ``python -m docform`` reads the JSON data as UTF-8 whatever the system locale.
+- Subdocs converted by Pandoc no longer produce XML with clashing namespace prefixes.
+- Embedded OLE objects in subdocs get unique ids, so they no longer collide with the
+  template's.
+- Using a subdoc no longer breaks core properties set afterwards, or inline images that reuse
+  an image the subdoc brought in.
+- ``new_subdoc()`` says to install ``docform[subdoc]`` when docxcompose is missing.
+- Cell background and ``colspan`` work on cells whose ``w:tcPr`` is self-closing.
 - Attributes of the underlying python-docx document, like ``tpl.paragraphs``, work before
   ``render()`` and show the rendered content after it.
 - Warn when the rendered document isn't valid XML, for example a value with ``<`` rendered
