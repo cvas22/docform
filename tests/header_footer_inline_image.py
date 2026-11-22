@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created : 2021-04-06
-
-@author: Eric Lapouyade
 """
 
 from docform import DocxTemplate, InlineImage

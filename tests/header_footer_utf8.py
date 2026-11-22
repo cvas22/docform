@@ -4,7 +4,6 @@ Created : 2016-07-19
 
 @author: AhnSeongHyun
 
-Edited : 2016-07-19 by Eric Lapouyade
 """
 
 from docform import DocxTemplate

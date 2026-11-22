@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created : 2015-03-26
-
-@author: Eric Lapouyade
 """
 
 from docform import DocxTemplate, RichText

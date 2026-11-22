@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created : 2021-07-30
-
-@author: Eric Lapouyade
 """
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn

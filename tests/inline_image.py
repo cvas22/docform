@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created : 2017-01-14
-
-@author: Eric Lapouyade
 """
 
 import zipfile
