@@ -2,8 +2,8 @@
 name = "docform"
 dynamic = ["version"]
 description = "Fill document templates with data using Jinja2"
-authors = [{name="Srinivas Chippagiri"}, {name="Eric Lapouyade", email="elapouya@proton.me"}]
-maintainers = [{name="Srinivas Chippagiri"}]
+authors = [{name="Srinivas Chippagiri", email="cvas22@gmail.com"}, {name="Eric Lapouyade"}]
+maintainers = [{name="Srinivas Chippagiri", email="cvas22@gmail.com"}]
 readme = "README.md"
 requires-python = ">=3.7"
 license = {text="LGPL-2.1-only"}

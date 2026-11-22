@@ -1,3 +1,8 @@
+1.0.1 (2026-11-22)
+------------------
+
+- List the Docform maintainer's contact email in the package metadata.
+
 1.0.0 (2026-11-22)
 ------------------
 

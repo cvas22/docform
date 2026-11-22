@@ -7,7 +7,7 @@ authors:
     given-names: Srinivas
   - family-names: Lapouyade
     given-names: Eric
-version: 1.0.0
+version: 1.0.1
 license: LGPL-2.1-only
 repository-code: "https://github.com/cvas22/docform"
 abstract: >-
