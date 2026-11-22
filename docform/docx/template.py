@@ -106,7 +106,93 @@ class DocxTemplate(object):
         return self.docx
 
     def get_xml(self):
-        return self.xml_to_string(self.docx._element.body)
+        body = self.docx._element.body
+        self.rescue_bookmarks(body)
+        return self.xml_to_string(body)
+
+    def rescue_bookmarks(self, root):
+        """Move bookmarks out of XML that patch_xml() is about to delete.
+
+        Word cross-references (REF fields) point at bookmarks, and a missing one
+        shows "Error! Reference source not found". patch_xml() drops the XML
+        between the pieces of a tag Word split over several runs, the whole
+        paragraph, row or cell of a {%p %}, {%tr %} or {%tc %} tag, and the XML
+        that {%- and -%} merge away. Bookmarks there move just outside, which
+        keeps them in the same paragraph for paragraph-number references.
+        """
+        w = docx.oxml.ns.nsmap["w"]
+        t_tag, p_tag = "{%s}t" % w, "{%s}p" % w
+        marks = ("{%s}bookmarkStart" % w, "{%s}bookmarkEnd" % w)
+
+        def text_of(p):
+            return "".join(t.text or "" for t in p.iter(t_tag))
+
+        def is_end_tag(tag_text):
+            # {% endfor %}, {%p endif %}, {%- endwith -%}: anything moved next
+            # to a closing tag goes after it, so it lands outside the block
+            # instead of being repeated by a loop.
+            m = re.match(r"[{][%{#]-?\s*(?:(?:p|tr|tc|r)\s)?\s*(\w*)", tag_text)
+            return bool(m and m.group(1).startswith("end"))
+
+        def put(marks, anchor, after):
+            for mark in reversed(marks) if after else marks:
+                (anchor.addnext if after else anchor.addprevious)(mark)
+
+        # Paragraph, row and cell tags replace their whole container.
+        for p in list(root.iter(p_tag)):
+            text = text_of(p)
+            m = re.search(r"({%|{{)(p|tr|tc) ", text)
+            if not m:
+                continue
+            target = p
+            if m.group(2) in ("tr", "tc"):
+                for anc in p.iterancestors("{%s}%s" % (w, m.group(2))):
+                    target = anc
+                    break
+            moved = list(p.iter(*marks))
+            if moved:
+                put(moved, target, is_end_tag(text[m.start():]))
+
+        # Tags split over runs, and the spans {%- and -%} merge away.
+        inside, open_run, tag_text, tag_marks = False, None, "", []
+        dash_marks, dash_anchor = [], None
+        prev_char, prev_run = "", None
+        last_text_run, since_text = None, []
+        dash_close_run, since_dash = None, []
+        for el in list(root.iter(t_tag, *marks)):
+            if el.tag in marks:
+                if inside:
+                    tag_marks.append(el)
+                    continue
+                since_text.append(el)
+                if dash_close_run is not None:
+                    since_dash.append(el)
+                continue
+            run = el.getparent()
+            if dash_close_run is not None:
+                put(since_dash, dash_close_run, False)
+                dash_close_run, since_dash = None, []
+            text = el.text or ""
+            for i, char in enumerate(text):
+                pair = prev_char + char
+                if inside:
+                    tag_text += char
+                if not inside and pair in ("{%", "{{", "{#"):
+                    inside, open_run, tag_text, tag_marks = True, prev_run if i == 0 else run, pair, []
+                    if pair == "{%" and text[i + 1: i + 2] == "-" and last_text_run is not None:
+                        dash_marks, dash_anchor, since_text = since_text, last_text_run, []
+                elif inside and pair in ("%}", "}}", "#}"):
+                    inside = False
+                    end_tag = is_end_tag(tag_text)
+                    if tag_marks:
+                        put(tag_marks, run if end_tag else open_run, end_tag)
+                    if dash_marks:
+                        put(dash_marks, run if end_tag else dash_anchor, end_tag)
+                        dash_marks, dash_anchor = [], None
+                    if pair == "%}" and tag_text[-3:-2] == "-":
+                        dash_close_run = run
+                prev_char, prev_run = char, run
+            last_text_run, since_text = run, []
 
     def write_xml(self, filename):
         # XML defaults to UTF-8 : do not rely on the locale default encoding,
@@ -556,8 +642,52 @@ class DocxTemplate(object):
             if (val.reltype == uri) and (val.target_part.blob):
                 yield relKey, val.target_part
 
+    @staticmethod
+    def drop_duplicate_bookmarks(root):
+        """Keep one bookmark of each name.
+
+        A bookmark inside a {% for %} block is repeated by the loop, and Word
+        expects bookmark names to be unique. The first copy that has a matching
+        end is kept, the others go together with their ends.
+        """
+        w = docx.oxml.ns.nsmap["w"]
+        start, end = "{%s}bookmarkStart" % w, "{%s}bookmarkEnd" % w
+        marks = list(root.iter(start, end))
+        claimed = set()
+
+        def end_of(mark):
+            # first unclaimed end with the same id after this start
+            mark_id = mark.get("{%s}id" % w)
+            for other in marks[marks.index(mark) + 1:]:
+                if other.tag == end and other.get("{%s}id" % w) == mark_id:
+                    if id(other) not in claimed:
+                        return other
+            return None
+
+        by_name = {}
+        for mark in marks:
+            if mark.tag == start:
+                by_name.setdefault(mark.get("{%s}name" % w), []).append(mark)
+        for group in by_name.values():
+            if len(group) < 2:
+                continue
+            keeper = next((m for m in group if end_of(m) is not None), group[0])
+            keeper_end = end_of(keeper)
+            if keeper_end is not None:
+                claimed.add(id(keeper_end))
+            for mark in group:
+                if mark is keeper:
+                    continue
+                mark_end = end_of(mark)
+                if mark_end is not None:
+                    claimed.add(id(mark_end))
+                    mark_end.getparent().remove(mark_end)
+                mark.getparent().remove(mark)
+
     def get_part_xml(self, part):
-        return self.xml_to_string(parse_xml(part.blob))
+        root = parse_xml(part.blob)
+        self.rescue_bookmarks(root)
+        return self.xml_to_string(root)
 
     def get_headers_footers_encoding(self, xml):
         m = re.match(r'<\?xml[^\?]+\bencoding="([^"]+)"', xml, re.I)
@@ -606,6 +736,7 @@ class DocxTemplate(object):
         self.fix_docpr_ids(tree)
 
         # Replace body xml tree
+        self.drop_duplicate_bookmarks(tree)
         self.map_tree(tree)
 
         # Headers
