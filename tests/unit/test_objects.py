@@ -179,3 +179,24 @@ def test_replace_pic_drops_the_unused_image(tmp_path):
     assert pics == {"only": other}
     images = [p for p in part.related_parts.values() if p.content_type.startswith("image/")]
     assert len(images) == 1
+
+
+def test_subdoc_ending_with_a_table_is_followed_by_a_paragraph(tmp_path):
+    pytest.importorskip("docxcompose")
+    doc = Document()
+    doc.add_table(rows=1, cols=1).cell(0, 0).text = "{{p sd }}"
+    doc.add_paragraph("{{p sd }}")
+    path = tmp_path / "tpl.docx"
+    doc.save(str(path))
+
+    tpl = DocxTemplate(str(path))
+    sd = tpl.new_subdoc()
+    sd.add_table(rows=1, cols=1).cell(0, 0).text = "inner"
+    tpl.render({"sd": sd})
+    body = saved(tpl).element.body
+
+    # A table cell has to end with a paragraph, and so does the body
+    # before its section properties.
+    outer_cell = body.xpath("./w:tbl/w:tr/w:tc")[0]
+    assert outer_cell[-1].tag.endswith("}p")
+    assert body[-2].tag.endswith("}p")
