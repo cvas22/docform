@@ -364,12 +364,19 @@ Replace docx pictures
 It is not possible to dynamically add images in header/footer, but you can change them.
 The idea is to put a dummy picture in your template, render the template as usual, then replace the dummy picture with another one.
 You can do that for all medias at the same time.
-Note: the aspect ratio will be the same as the replaced image
+Note: unless you give a new size, the size and aspect ratio will be the same as the replaced image
 Note2 : Specify the filename that has been used to insert the image in the docx template (only its basename, not the full path)
 
 Syntax to replace dummy_header_pic.jpg::
 
    tpl.replace_pic('dummy_header_pic.jpg','header_pic_i_want.jpg')
+
+To change the displayed size too, pass ``width`` and/or ``height`` (python-docx lengths like ``Mm(30)``, or EMU).
+With only one of them, the other is scaled to keep the replaced picture's aspect ratio::
+
+   from docx.shared import Mm
+
+   tpl.replace_pic('dummy_header_pic.jpg', 'header_pic_i_want.jpg', width=Mm(40))
 
 
 The replacement occurs in headers, footers and the whole document's body.
