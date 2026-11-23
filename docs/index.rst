@@ -316,6 +316,15 @@ variable `{{p mysubdoc }}`.
 
 See `tests/merge_docx.py` for full code.
 
+``new_subdoc()`` also takes a file-like object, a python-docx ``Document`` you built in memory, or another ``DocxTemplate``,
+for example one you already rendered. No temporary file is needed, and the object you pass is not modified ::
+
+   sub_tpl = DocxTemplate('templates/merge_docx_subdoc.docx')
+   sub_tpl.render({'name': 'John'})
+
+   tpl = DocxTemplate('templates/merge_docx_master_tpl.docx')
+   tpl.render({'mysubdoc': tpl.new_subdoc(sub_tpl)})
+
 A subdoc is made of paragraphs, so it has to be inserted with the paragraph tag ``{{p mysubdoc }}``, alone in its paragraph.
 With a plain ``{{ mysubdoc }}`` the paragraphs end up inside the text of the paragraph that holds the tag: an empty paragraph is left behind
 and, if the paragraph also has other content such as a bookmark or formatted text, the generated document may be corrupted and refused by Word.

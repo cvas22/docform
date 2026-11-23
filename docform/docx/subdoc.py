@@ -4,8 +4,10 @@ Created : 2021-07-30
 """
 
 from copy import deepcopy
+import io
 
 from docx import Document
+from docx.document import Document as DocumentObject
 from docx.oxml import CT_SectPr
 from docx.oxml.ns import nsmap, qn
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
@@ -198,12 +200,29 @@ class Subdoc(object):
     def __init__(self, tpl, docpath=None):
         self.tpl = tpl
         self.docx = tpl.get_docx()
-        self.subdocx = Document(docpath)
+        self.subdocx = Document(self._as_source(docpath))
         if docpath:
             compose = SubdocComposer(self.docx)
             compose.attach_parts(self.subdocx)
         else:
             self.subdocx._part = self.docx._part
+
+    @staticmethod
+    def _as_source(docpath):
+        """Return something Document() can open.
+
+        A python-docx Document or a DocxTemplate (rendered or not) is saved to
+        memory first, so the subdoc gets its own copy and the object passed in
+        is left untouched.
+        """
+        from .template import DocxTemplate
+
+        if isinstance(docpath, (DocumentObject, DocxTemplate)):
+            stream = io.BytesIO()
+            docpath.save(stream)
+            stream.seek(0)
+            return stream
+        return docpath
 
     def __getattr__(self, name):
         return getattr(self.subdocx, name)
