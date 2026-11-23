@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from os import PathLike
 from typing import TYPE_CHECKING, Any, Optional, IO, Union, Dict, Set
+import asyncio
 import functools
 import io
 from lxml import etree
@@ -774,6 +775,32 @@ class DocxTemplate(object):
         for rId, rel in part.rels.items():
             new_part.load_rel(rel.reltype, rel._target, rel.rId, rel.is_external)
         self.docx._part.rels[relKey]._target = new_part
+
+    @staticmethod
+    async def _run_in_executor(executor, func, *args, **kwargs):
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(executor, functools.partial(func, *args, **kwargs))
+
+    async def render_async(
+        self,
+        context: Dict[str, Any],
+        jinja_env: Optional[Environment] = None,
+        autoescape: bool = False,
+        executor=None,
+    ) -> None:
+        """Run render() in a worker thread so the event loop isn't blocked.
+
+        executor is a concurrent.futures executor; None uses the loop's
+        default one. Pass your own to cap how many renders run at once.
+        Don't render or save the same template from two tasks at once.
+        """
+        await self._run_in_executor(executor, self.render, context, jinja_env, autoescape)
+
+    async def save_async(
+        self, filename: Union[IO[bytes], str, PathLike], *args, executor=None, **kwargs
+    ) -> None:
+        """Run save() in a worker thread, see render_async()."""
+        await self._run_in_executor(executor, self.save, filename, *args, **kwargs)
 
     def render(
         self,

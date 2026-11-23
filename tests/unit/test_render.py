@@ -523,3 +523,30 @@ def test_bookmark_in_a_loop_is_kept_once(tmp_path):
     out = saved(tpl)
     assert body_text(out) == ["a", "b", "c"]
     assert _bookmarks(out) == (["_Ref1"], ["7"])
+
+
+def test_render_and_save_async(make_docx):
+    import asyncio
+    from concurrent.futures import ThreadPoolExecutor
+
+    async def build(name, executor):
+        tpl = DocxTemplate(make_docx(["Hello {{ name }}"]))
+        await tpl.render_async({"name": name}, executor=executor)
+        out = io.BytesIO()
+        await tpl.save_async(out, executor=executor)
+        out.seek(0)
+        return body_text(Document(out))
+
+    async def main():
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            return await asyncio.gather(*(build(n, pool) for n in ("Ann", "Bob", "Cy")))
+
+    assert asyncio.run(main()) == [["Hello Ann"], ["Hello Bob"], ["Hello Cy"]]
+
+
+def test_render_async_raises_render_errors(make_docx):
+    import asyncio
+
+    tpl = DocxTemplate(make_docx(["{{ broken "]))
+    with pytest.raises(TemplateSyntaxError):
+        asyncio.run(tpl.render_async({}))
