@@ -1,4 +1,5 @@
 import io
+from pathlib import Path
 import struct
 import zlib
 
@@ -187,29 +188,54 @@ def test_subdoc_from_document_object(make_docx):
     assert other.element.body.sectPr is not None
 
 
-def test_subdoc_from_document_object_leaves_it_untouched(make_docx):
-    pytest.importorskip("docxcompose")
+TEMPLATES = Path(__file__).resolve().parents[1] / "templates"
+
+
+def _package_snapshot(doc):
+    """Every part of a document, with its content and relationships."""
+    from docx.opc.part import XmlPart
     from lxml import etree
 
-    other = Document()
-    other.add_paragraph("styled", style="Heading 1")
-    other.add_picture(io.BytesIO(PNG), width=Mm(10))
-    before = etree.tostring(other.element)
+    snap = {}
+    for part in doc.part.package.iter_parts():
+        data = etree.tostring(part._element) if isinstance(part, XmlPart) else part.blob
+        rels = sorted((r.rId, r.reltype, r.target_ref) for r in part.rels.values())
+        snap[str(part.partname)] = (data, rels)
+    return snap
+
+
+def _doc_with_picture():
+    doc = Document()
+    doc.add_paragraph("styled", style="Heading 1")
+    doc.add_paragraph("item", style="List Number")
+    doc.add_picture(io.BytesIO(PNG), width=Mm(10))
+    return doc
+
+
+@pytest.mark.parametrize(
+    "source",
+    ["picture", "merge_docx_subdoc.docx", "issue_621_subdoc.docx", "footnotes_tpl.docx", "pandoc_subdoc.docx"],
+)
+def test_subdoc_from_document_object_leaves_it_untouched(make_docx, source):
+    pytest.importorskip("docxcompose")
+    other = _doc_with_picture() if source == "picture" else Document(str(TEMPLATES / source))
+    before = _package_snapshot(other)
 
     tpl = DocxTemplate(make_docx(["{{p a }}", "{{p b }}"]))
     tpl.render({"a": tpl.new_subdoc(other), "b": tpl.new_subdoc(other)})
     doc = saved(tpl)
-    assert etree.tostring(other.element) == before
-    assert body_text(doc).count("styled") == 2
-    assert len(doc.inline_shapes) == 2
-    for shape in doc.inline_shapes:
-        assert shape._inline.graphic.graphicData.pic.blipFill.blip.embed in doc.part.rels
+    # styles, numbering, images, footnotes and every other part stay as they were
+    assert _package_snapshot(other) == before
+    if source == "picture":
+        assert body_text(doc).count("styled") == 2
+        assert len(doc.inline_shapes) == 2
+        for shape in doc.inline_shapes:
+            assert shape._inline.graphic.graphicData.pic.blipFill.blip.embed in doc.part.rels
 
 
 def test_subdoc_from_document_with_custom_properties(make_docx):
     pytest.importorskip("docxcompose")
     from docxcompose.properties import CustomProperties
-    from lxml import etree
 
     other = Document()
     other.add_paragraph("has props")
@@ -218,12 +244,12 @@ def test_subdoc_from_document_with_custom_properties(make_docx):
     other.save(saved_other)
     saved_other.seek(0)
     other = Document(saved_other)
-    before = etree.tostring(other.element)
+    before = _package_snapshot(other)
 
     tpl = DocxTemplate(make_docx(["{{p sd }}"]))
     tpl.render({"sd": tpl.new_subdoc(other)})
     assert body_text(saved(tpl)) == ["has props"]
-    assert etree.tostring(other.element) == before
+    assert _package_snapshot(other) == before
 
 
 def test_subdoc_style_mapping_matches_python_docx():
