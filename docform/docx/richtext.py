@@ -147,15 +147,20 @@ class RichTextParagraph(object):
         self,
         text,
         parastyle=None,
+        rtl=False,
     ):
+        """Add a paragraph. rtl=True makes it a right-to-left paragraph,
+        and a plain string text gets right-to-left runs too."""
 
         # If a RichText is added
         if not isinstance(text, RichText):
-            text = RichText(text)
+            text = RichText(text, rtl=rtl)
 
         prop = ""
         if parastyle:
             prop += '<w:pStyle w:val="%s"/>' % parastyle
+        if rtl:
+            prop += "<w:bidi/>"
 
         xml = "<w:p>"
         if prop:

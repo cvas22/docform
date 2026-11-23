@@ -246,6 +246,18 @@ To specify a region, you have to prefix your font name this that region and a co
 
    ch = RichText('测试TEST', font='eastAsia:微软雅黑')
 
+For right-to-left text such as Arabic, Hebrew or Persian, pass ``rtl=True`` to each ``add()`` call (or to ``RichText()``) whose
+text is right-to-left. Bold and italic then also apply to the complex-script text, and ``lang`` sets the language::
+
+   rt = RichText('سلام', rtl=True, bold=True, lang='fa-IR')
+   rt.add(' دنیا', rtl=True)
+
+``RichTextParagraph.add()`` takes ``rtl=True`` too. It sets the paragraph direction to right-to-left, so the text starts
+on the right and punctuation lands where readers expect it::
+
+   rp = RichTextParagraph()
+   rp.add(RichText('שלום עולם', rtl=True), rtl=True)
+
 **Important** : When you use ``{{r }}`` it removes the current character styling from your docx template, this means that if
 you do not specify a style in ``RichText()``, the style will go back to a microsoft word default style.
 This will affect only character styles, not the paragraph styles (MSWord manages this 2 kind of styles).
