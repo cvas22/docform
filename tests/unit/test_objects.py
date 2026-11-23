@@ -187,6 +187,55 @@ def test_subdoc_from_document_object(make_docx):
     assert other.element.body.sectPr is not None
 
 
+def test_subdoc_from_document_object_leaves_it_untouched(make_docx):
+    pytest.importorskip("docxcompose")
+    from lxml import etree
+
+    other = Document()
+    other.add_paragraph("styled", style="Heading 1")
+    other.add_picture(io.BytesIO(PNG), width=Mm(10))
+    before = etree.tostring(other.element)
+
+    tpl = DocxTemplate(make_docx(["{{p a }}", "{{p b }}"]))
+    tpl.render({"a": tpl.new_subdoc(other), "b": tpl.new_subdoc(other)})
+    doc = saved(tpl)
+    assert etree.tostring(other.element) == before
+    assert body_text(doc).count("styled") == 2
+    assert len(doc.inline_shapes) == 2
+    for shape in doc.inline_shapes:
+        assert shape._inline.graphic.graphicData.pic.blipFill.blip.embed in doc.part.rels
+
+
+def test_subdoc_from_document_with_custom_properties(make_docx):
+    pytest.importorskip("docxcompose")
+    from docxcompose.properties import CustomProperties
+    from lxml import etree
+
+    other = Document()
+    other.add_paragraph("has props")
+    CustomProperties(other).add("Client", "ACME")
+    saved_other = io.BytesIO()
+    other.save(saved_other)
+    saved_other.seek(0)
+    other = Document(saved_other)
+    before = etree.tostring(other.element)
+
+    tpl = DocxTemplate(make_docx(["{{p sd }}"]))
+    tpl.render({"sd": tpl.new_subdoc(other)})
+    assert body_text(saved(tpl)) == ["has props"]
+    assert etree.tostring(other.element) == before
+
+
+def test_subdoc_style_mapping_matches_python_docx():
+    pytest.importorskip("docxcompose")
+    from docform.docx.subdoc import _style_ids_and_names
+
+    doc = Document()
+    doc.styles.add_style("My Custom", 1)
+    expected = [(s.style_id, s.name) for s in doc.styles]
+    assert list(_style_ids_and_names(doc)) == expected
+
+
 def test_subdoc_from_rendered_template(make_docx):
     pytest.importorskip("docxcompose")
     sub_tpl = DocxTemplate(make_docx(["Hello {{ name }}"]))

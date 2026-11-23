@@ -10,6 +10,7 @@ from docx import Document
 from docx.document import Document as DocumentObject
 from docx.oxml import CT_SectPr
 from docx.oxml.ns import nsmap, qn
+from docx.styles import BabelFish
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
 from docxcompose.properties import CustomProperties
 from docxcompose.utils import xpath
@@ -27,6 +28,19 @@ W14_ANCHOR_ID = (
 # properties namespace. Restore its standard meaning so python-docx updates
 # existing core properties instead of adding conflicting elements.
 nsmap["cp"] = "http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
+
+
+def _style_ids_and_names(doc):
+    """Yield (style id, UI name) for each style, like iterating doc.styles."""
+    w_name = qn("w:name")
+    w_val = qn("w:val")
+    w_style_id = qn("w:styleId")
+    for style in doc.styles.element.iterchildren(qn("w:style")):
+        name = style.find(w_name)
+        name = name.get(w_val) if name is not None else None
+        if name is not None:
+            name = BabelFish.internal2ui(name)
+        yield style.get(w_style_id), name
 
 
 class SubdocComposer(Composer):
@@ -62,6 +76,15 @@ class SubdocComposer(Composer):
         self.renumber_docpr_ids()
         self.renumber_nvpicpr_ids()
         self.fix_section_types(doc)
+
+    def _create_style_id_mapping(self, doc):
+        # Same mapping as docxcompose, read straight from the styles XML.
+        # Building a python-docx Style object for every style of both
+        # documents made this most of the time spent per subdoc.
+        self._style_id2name = dict(_style_ids_and_names(doc))
+        self._style_name2id = {
+            name: style_id for style_id, name in _style_ids_and_names(self.doc)
+        }
 
     def reset_reference_mapping(self):
         super().reset_reference_mapping()
@@ -194,13 +217,21 @@ class SubdocComposer(Composer):
                 dgm_rel.set("{%s}%s" % (NS["r"], item), new_rid)
 
 
+def _has_custom_properties(doc):
+    try:
+        doc.part.package.part_related_by(RT.CUSTOM_PROPERTIES)
+    except KeyError:
+        return False
+    return True
+
+
 class Subdoc(object):
     """Class for subdocument to insert into master document"""
 
     def __init__(self, tpl, docpath=None):
         self.tpl = tpl
         self.docx = tpl.get_docx()
-        self.subdocx = Document(self._as_source(docpath))
+        self.subdocx = self._open(docpath)
         if docpath:
             compose = SubdocComposer(self.docx)
             compose.attach_parts(self.subdocx)
@@ -208,21 +239,36 @@ class Subdoc(object):
             self.subdocx._part = self.docx._part
 
     @staticmethod
-    def _as_source(docpath):
-        """Return something Document() can open.
+    def _open(docpath):
+        """Return the python-docx Document to insert.
 
-        A python-docx Document or a DocxTemplate (rendered or not) is saved to
-        memory first, so the subdoc gets its own copy and the object passed in
-        is left untouched.
+        A python-docx Document or a DocxTemplate (rendered or not) is copied,
+        so the object passed in is left untouched. Building the subdoc only
+        changes the document body, so copying the body XML is enough and much
+        faster than saving and reopening the whole package. Custom property
+        fields can live in headers and footers too, and a DocxTemplate may
+        have media replacements that only happen on save, so those still go
+        through a full save.
         """
         from .template import DocxTemplate
 
+        if isinstance(docpath, DocxTemplate):
+            if not (
+                docpath.crc_to_new_media
+                or docpath.crc_to_new_embedded
+                or docpath.zipname_to_replace
+                or docpath.pics_to_replace
+            ):
+                docpath.init_docx(reload=False)
+                docpath = docpath.docx
+        if isinstance(docpath, DocumentObject) and not _has_custom_properties(docpath):
+            return DocumentObject(deepcopy(docpath.element), docpath.part)
         if isinstance(docpath, (DocumentObject, DocxTemplate)):
             stream = io.BytesIO()
             docpath.save(stream)
             stream.seek(0)
-            return stream
-        return docpath
+            return Document(stream)
+        return Document(docpath)
 
     def __getattr__(self, name):
         return getattr(self.subdocx, name)
