@@ -464,6 +464,32 @@ Pass ``nested=True`` to follow attribute and key lookups and get dotted paths in
 ``foo['bar']`` is reported as ``foo.bar``. Lookups with a variable key like ``rows[i].x`` stop before the
 variable key, and method calls like ``data.items()`` stop at ``data``.
 
+Async rendering
+---------------
+
+Rendering is CPU and file work, so it blocks the event loop when called from async code like a FastAPI endpoint.
+``render_async()`` and ``save_async()`` run ``render()`` and ``save()`` in a worker thread instead::
+
+   import io
+   from docform import DocxTemplate
+
+   async def make_report(context):
+       tpl = DocxTemplate('my_word_template.docx')
+       await tpl.render_async(context)
+       out = io.BytesIO()
+       await tpl.save_async(out)
+       return out.getvalue()
+
+They take the same arguments as ``render()`` and ``save()``. By default they use the event loop's default thread pool.
+To limit how many documents are generated at once, pass your own executor::
+
+   from concurrent.futures import ThreadPoolExecutor
+
+   pool = ThreadPoolExecutor(max_workers=4)
+   await tpl.render_async(context, executor=pool)
+
+Use one ``DocxTemplate`` per task, the same object must not be rendered or saved from two tasks at the same time.
+
 Multiple rendering
 ------------------
 
