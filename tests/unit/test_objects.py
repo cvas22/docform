@@ -100,6 +100,24 @@ def test_richtext_rtl_on_every_add(make_docx):
     assert runs[1]._r.rPr.find(qn("w:iCs")) is not None
 
 
+@pytest.mark.parametrize("autoescape", [False, True])
+def test_filters_can_return_richtext_and_inline_image(make_docx, autoescape):
+    from jinja2.sandbox import SandboxedEnvironment
+
+    tpl = DocxTemplate(make_docx(["{{r title|rich(color='FF0000', bold=True) }}", "{{ logo|image(10) }}"]))
+    env = SandboxedEnvironment(autoescape=autoescape)
+    env.filters["rich"] = lambda value, **props: RichText(value, **props)
+    env.filters["image"] = lambda data, mm: InlineImage(tpl, io.BytesIO(data), width=Mm(mm))
+    tpl.render({"title": "a < b", "logo": PNG}, env, autoescape=autoescape)
+
+    doc = saved(tpl)
+    run = [r for r in doc.paragraphs[0].runs if r.text][0]
+    assert run.text == "a < b"
+    assert run.bold
+    assert str(run.font.color.rgb) == "FF0000"
+    assert len(doc.inline_shapes) == 1
+
+
 def test_rp_alias():
     assert RP is RichTextParagraph
     assert R is RichText
