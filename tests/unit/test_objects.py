@@ -126,6 +126,33 @@ def test_subdoc_from_file(make_docx, tmp_path):
     assert "merged in" in body_text(saved(tpl))
 
 
+def test_subdoc_from_document_object(make_docx):
+    pytest.importorskip("docxcompose")
+    other = Document()
+    other.add_paragraph("built in memory")
+    other.add_picture(io.BytesIO(PNG), width=Mm(10))
+
+    tpl = DocxTemplate(make_docx(["before", "{{p sd }}", "after"]))
+    tpl.render({"sd": tpl.new_subdoc(other)})
+    doc = saved(tpl)
+    assert body_text(doc)[0] == "before"
+    assert "built in memory" in body_text(doc)
+    assert body_text(doc)[-1] == "after"
+    assert doc.inline_shapes[0]._inline.graphic.graphicData.pic.blipFill.blip.embed in doc.part.rels
+    # the Document passed in still has its section settings
+    assert other.element.body.sectPr is not None
+
+
+def test_subdoc_from_rendered_template(make_docx):
+    pytest.importorskip("docxcompose")
+    sub_tpl = DocxTemplate(make_docx(["Hello {{ name }}"]))
+    sub_tpl.render({"name": "John"})
+
+    tpl = DocxTemplate(make_docx(["{{p sd }}"]))
+    tpl.render({"sd": tpl.new_subdoc(sub_tpl)})
+    assert body_text(saved(tpl)) == ["Hello John"]
+
+
 def _pictures(path):
     """Map each picture's name to the bytes of the image it shows."""
     doc = Document(str(path))
