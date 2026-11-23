@@ -917,20 +917,32 @@ class DocxTemplate(object):
             with open(dst_file, "rb") as fh:
                 self.crc_to_new_media[crc] = fh.read()
 
-    def replace_pic(self, embedded_file, dst_file):
+    def replace_pic(self, embedded_file, dst_file, width=None, height=None):
         """Replace embedded picture with original-name given by embedded_file.
            (give only the file basename, not the full path)
            The new picture is given by dst_file (either a filename or a file-like
            object)
 
+        width and height set the displayed size of the new picture, as EMU
+        or python-docx lengths like Mm(30). If only one is given, the other
+        is scaled to keep the replaced picture's aspect ratio.
+
         Notes:
             1) embedded_file and dst_file must have the same extension/format
                in case dst_file is a file-like object, no check is done on
                format compatibility
-            2) the aspect ratio will be the same as the replaced image
+            2) without width or height, the size and aspect ratio will be the
+               same as the replaced image
             3) There is no need to keep the original file (this is not the case
                for replace_embedded and replace_media)
         """
+        for name, value in (("width", width), ("height", height)):
+            if value is not None and int(value) <= 0:
+                raise ValueError("%s must be a positive length" % name)
+        if width is not None or height is not None:
+            self.pics_to_resize[embedded_file] = (width, height)
+        else:
+            self.pics_to_resize.pop(embedded_file, None)
 
         if hasattr(dst_file, "read"):
             # NOTE: file extension not checked
@@ -1006,6 +1018,7 @@ class DocxTemplate(object):
         self.crc_to_new_embedded = {}
         self.zipname_to_replace = {}
         self.pics_to_replace = {}
+        self.pics_to_resize = {}
 
     def post_processing(self, docx_file):
         if self.crc_to_new_media or self.crc_to_new_embedded or self.zipname_to_replace:
@@ -1126,6 +1139,8 @@ class DocxTemplate(object):
                 for img_id, img_data in self.pics_to_replace.items():
                     if img_id == filename or img_id == title or img_id == description:
                         new_rel = self._swap_pic_image(doc_part, blip, rel, img_data)
+                        if img_id in self.pics_to_resize:
+                            self._resize_pic(gd, *self.pics_to_resize[img_id])
                         part_map[filename] = (
                             doc_part.rels[new_rel].target_ref,
                             doc_part.rels[new_rel].target_part,
@@ -1139,6 +1154,33 @@ class DocxTemplate(object):
                 continue
 
         self.pic_map.update(part_map)
+
+    @staticmethod
+    def _resize_pic(graphic_data, width, height):
+        """Set the displayed size of the picture in graphic_data.
+
+        Word reads the size from wp:extent on the inline or anchored drawing,
+        and the picture's own a:ext has to match it.
+        """
+        ns = docx.oxml.ns.nsmap
+        drawing = graphic_data.getparent().getparent()
+        extent = drawing.find("{%s}extent" % ns["wp"])
+        if extent is None:
+            return
+        cx, cy = int(extent.get("cx")), int(extent.get("cy"))
+        if width is not None and height is not None:
+            cx, cy = int(width), int(height)
+        elif width is not None:
+            cx, cy = int(width), int(round(cy * int(width) / cx)) if cx else cy
+        else:
+            cx, cy = (int(round(cx * int(height) / cy)) if cy else cx), int(height)
+        extent.set("cx", str(cx))
+        extent.set("cy", str(cy))
+        for ext in etree._Element.xpath(
+            graphic_data, "pic:pic/pic:spPr/a:xfrm/a:ext", namespaces=ns
+        ):
+            ext.set("cx", str(cx))
+            ext.set("cy", str(cy))
 
     @staticmethod
     def _swap_pic_image(doc_part, blip, rel, img_data):

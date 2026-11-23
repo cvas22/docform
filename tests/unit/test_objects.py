@@ -208,6 +208,62 @@ def test_replace_pic_drops_the_unused_image(tmp_path):
     assert len(images) == 1
 
 
+def _picture_sizes(path):
+    """Map each picture's name to its (extent, a:ext) sizes in EMU."""
+    doc = Document(str(path))
+    out = {}
+    for inline in doc.element.body.xpath(".//wp:inline"):
+        name = inline.xpath(".//pic:cNvPr/@name")[0]
+        extent = inline.xpath("./wp:extent")[0]
+        ext = inline.xpath(".//pic:spPr/a:xfrm/a:ext")[0]
+        out[name] = (
+            (int(extent.get("cx")), int(extent.get("cy"))),
+            (int(ext.get("cx")), int(ext.get("cy"))),
+        )
+    return out
+
+
+def _render_replaced(tmp_path, **size):
+    doc = Document()
+    doc.add_picture(io.BytesIO(PNG), width=Mm(20), height=Mm(10))
+    doc.add_picture(io.BytesIO(PNG), width=Mm(20), height=Mm(10))
+    for name, el in zip(("img1", "img2"), doc.element.body.xpath(".//pic:cNvPr")):
+        el.set("name", name)
+    path = tmp_path / "sized.docx"
+    doc.save(str(path))
+
+    tpl = DocxTemplate(str(path))
+    tpl.replace_pic("img1", io.BytesIO(_png(6, 6)), **size)
+    tpl.render({})
+    out = tmp_path / "out.docx"
+    tpl.save(str(out))
+    return _picture_sizes(out)
+
+
+def test_replace_pic_sets_width_and_height(tmp_path):
+    sizes = _render_replaced(tmp_path, width=Mm(30), height=Mm(40))
+    assert sizes["img1"] == ((Mm(30), Mm(40)), (Mm(30), Mm(40)))
+    assert sizes["img2"] == ((Mm(20), Mm(10)), (Mm(20), Mm(10)))
+
+
+def test_replace_pic_scales_the_missing_side(tmp_path):
+    sizes = _render_replaced(tmp_path, width=Mm(40))
+    assert sizes["img1"] == ((Mm(40), Mm(20)), (Mm(40), Mm(20)))
+    sizes = _render_replaced(tmp_path, height=Mm(5))
+    assert sizes["img1"] == ((Mm(10), Mm(5)), (Mm(10), Mm(5)))
+
+
+def test_replace_pic_keeps_size_by_default(tmp_path):
+    sizes = _render_replaced(tmp_path)
+    assert sizes["img1"] == ((Mm(20), Mm(10)), (Mm(20), Mm(10)))
+
+
+def test_replace_pic_rejects_non_positive_size():
+    tpl = DocxTemplate(io.BytesIO())
+    with pytest.raises(ValueError):
+        tpl.replace_pic("img1", io.BytesIO(PNG), width=0)
+
+
 def test_subdoc_ending_with_a_table_is_followed_by_a_paragraph(tmp_path):
     pytest.importorskip("docxcompose")
     doc = Document()
