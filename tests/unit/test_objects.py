@@ -4,6 +4,7 @@ import zlib
 
 import pytest
 from docx import Document
+from docx.oxml.ns import qn
 from docx.shared import Mm
 
 from docform import DocxTemplate, InlineImage, Listing, R, RichText, RichTextParagraph, RP
@@ -72,6 +73,31 @@ def test_richtext_paragraph(make_docx):
     doc = saved(tpl)
     assert body_text(doc) == ["first", "second"]
     assert doc.paragraphs[1].style.name == "Heading 1"
+
+
+def test_richtext_paragraph_rtl(make_docx):
+    rp = RichTextParagraph()
+    rp.add("שלום", rtl=True)
+    rp.add("left to right")
+    tpl = DocxTemplate(make_docx(["{{p rp }}"]))
+    tpl.render({"rp": rp})
+    doc = saved(tpl)
+    rtl_p, ltr_p = doc.paragraphs
+    assert rtl_p._p.pPr.find(qn("w:bidi")) is not None
+    assert rtl_p.runs[0]._r.rPr.find(qn("w:rtl")) is not None
+    assert ltr_p._p.pPr is None or ltr_p._p.pPr.find(qn("w:bidi")) is None
+    assert ltr_p.runs[0]._r.rPr is None
+
+
+def test_richtext_rtl_on_every_add(make_docx):
+    rt = RichText("سلام", rtl=True, bold=True)
+    rt.add(" دنیا", rtl=True, italic=True)
+    tpl = DocxTemplate(make_docx(["{{r rt }}"]))
+    tpl.render({"rt": rt})
+    runs = [r for r in saved(tpl).paragraphs[0].runs if r.text]
+    assert all(r._r.rPr.find(qn("w:rtl")) is not None for r in runs)
+    assert runs[0]._r.rPr.find(qn("w:bCs")) is not None
+    assert runs[1]._r.rPr.find(qn("w:iCs")) is not None
 
 
 def test_rp_alias():
