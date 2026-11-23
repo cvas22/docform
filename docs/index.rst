@@ -269,6 +269,7 @@ method to concatenate several strings and styles at python side and only one
 **Important** : ``RichText`` objects are rendered into xml *before* any filter is applied
 thus ``RichText`` are not compatible with Jinja2 filters. You cannot write in your template something like ``{{r <var>|lower }}``.
 Only solution is instead to do any filtering into your python code when creating the ``RichText`` object.
+The other way around works though: a custom filter can return a ``RichText``, see `Jinja custom filters`_.
 
 Hyperlink with RichText
 +++++++++++++++++++++++
@@ -515,6 +516,37 @@ By this way you will be able to add some custom jinja filters::
 Then in your template, you will be able to use::
 
     Euros price : {{ price_dollars|multiply_by(0.88) }}
+
+A filter can also return a ``RichText`` or an ``InlineImage``. That way the template decides how a value is
+shown and the code that builds the context only sends plain data, like a string or a base64 image::
+
+    import base64
+    import io
+
+    from docx.shared import Mm
+    from docform import DocxTemplate, InlineImage, RichText
+    from jinja2.sandbox import SandboxedEnvironment
+
+    doc = DocxTemplate("my_word_template.docx")
+
+    def to_rich_text(value, **props):
+        return RichText(value, **props)
+
+    def image_from_base64(value, width_mm):
+        return InlineImage(doc, io.BytesIO(base64.b64decode(value)), width=Mm(width_mm))
+
+    jinja_env = SandboxedEnvironment()
+    jinja_env.filters['to_rich_text'] = to_rich_text
+    jinja_env.filters['image_from_base64'] = image_from_base64
+    doc.render({'title': 'Monthly report', 'logo': logo_base64}, jinja_env)
+
+and in the template::
+
+    {{r title|to_rich_text(color='FF0000', bold=True) }}
+    {{ logo|image_from_base64(40) }}
+
+A filter that returns a ``RichText`` still needs the ``{{r }}`` tag. ``InlineImage`` needs the template object,
+so build the filter after creating the ``DocxTemplate``.
 
 Sandboxed rendering
 -------------------
