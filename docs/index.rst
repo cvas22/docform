@@ -451,6 +451,18 @@ In order to get the missing variables after rendering use ::
 
 **IMPORTANT** : If `context` is not passed, you will get a set with all keys you need, e.g. to be prompted to a user or written in a file for manual processing.
 
+By default only the top-level names are returned, so ``{{ customer.address.city }}`` gives ``customer``.
+Pass ``nested=True`` to follow attribute and key lookups and get dotted paths instead ::
+
+   tpl.get_undeclared_template_variables(nested=True)
+   # {'customer.address.city', ...}
+
+   tpl.get_undeclared_template_variables(context=context_dict, nested=True)
+   # only the paths that can't be found in context_dict
+
+``foo['bar']`` is reported as ``foo.bar``. Lookups with a variable key like ``rows[i].x`` stop before the
+variable key, and method calls like ``data.items()`` stop at ``data``.
+
 Multiple rendering
 ------------------
 

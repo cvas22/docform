@@ -14,7 +14,7 @@ from docx.opc.oxml import parse_xml
 from docx.opc.part import XmlPart
 import docx.oxml.ns
 from docx.opc.constants import RELATIONSHIP_TYPE as REL_TYPE
-from jinja2 import Environment, meta
+from jinja2 import Environment, meta, nodes
 from jinja2.sandbox import SandboxedEnvironment
 from jinja2.exceptions import TemplateError
 
@@ -31,6 +31,73 @@ import zipfile
 
 if TYPE_CHECKING:
     from .subdoc import Subdoc
+
+
+def _lookup_path(node):
+    """Return (root name, [keys]) for foo.bar['baz'], or None."""
+    keys = []
+    while True:
+        if isinstance(node, nodes.Getattr):
+            keys.append(node.attr)
+            node = node.node
+        elif isinstance(node, nodes.Getitem):
+            if not isinstance(node.arg, nodes.Const):
+                # foo[i]: only the part before the dynamic key is known
+                keys = []
+            else:
+                keys.append(node.arg.value)
+            node = node.node
+        elif isinstance(node, nodes.Name):
+            return node.name, keys[::-1]
+        else:
+            return None
+
+
+def _variable_paths(ast, names):
+    """Collect the lookup paths, as tuples, rooted at the given names.
+
+    A path that is only the start of a longer one is dropped, and method
+    calls like foo.items() stop at foo.
+    """
+    found = set()
+
+    def visit(node, called=False):
+        if isinstance(node, (nodes.Getattr, nodes.Getitem, nodes.Name)):
+            path = _lookup_path(node)
+            if path is not None and path[0] in names:
+                keys = path[1]
+                if called and keys:
+                    keys = keys[:-1]
+                found.add((path[0],) + tuple(keys))
+                # keep looking for lookups inside dynamic keys
+                for child in node.find_all(nodes.Getitem):
+                    if not isinstance(child.arg, nodes.Const):
+                        visit(child.arg)
+                return
+        for child in node.iter_child_nodes():
+            visit(child, called=isinstance(node, nodes.Call) and child is node.node)
+
+    visit(ast)
+    found |= {(name,) for name in names}
+    return {
+        p for p in found
+        if not any(len(q) > len(p) and q[: len(p)] == p for q in found)
+    }
+
+
+def _context_has_path(context, path):
+    value = context
+    for key in path:
+        if isinstance(value, dict) and key in value:
+            value = value[key]
+        elif isinstance(key, str) and hasattr(value, key):
+            value = getattr(value, key)
+        else:
+            try:
+                value = value[key]
+            except Exception:
+                return False
+    return True
 
 
 class DocxTemplate(object):
@@ -1227,7 +1294,15 @@ class DocxTemplate(object):
         self,
         jinja_env: Optional[Environment] = None,
         context: Optional[Dict[str, Any]] = None,
+        nested: bool = False,
     ) -> Set[str]:
+        """Return the variables the template uses but doesn't define.
+
+        With context, only the ones missing from it are returned. With
+        nested=True, attribute and key lookups are followed too, so
+        ``{{ foo.bar }}`` gives ``foo.bar`` instead of ``foo``, and with
+        context a path is returned when any part of it is missing.
+        """
         # Create a temporary document to analyze the template without affecting the current state
         temp_doc = Document(self.template_file)
 
@@ -1249,6 +1324,12 @@ class DocxTemplate(object):
 
         parse_content = env.parse(xml)
         all_variables = meta.find_undeclared_variables(parse_content)
+
+        if nested:
+            paths = _variable_paths(parse_content, all_variables)
+            if context is not None:
+                paths = {p for p in paths if not _context_has_path(context, p)}
+            return {".".join(str(k) for k in p) for p in paths}
 
         # If context is provided, return only variables that are not in the context
         if context is not None:
