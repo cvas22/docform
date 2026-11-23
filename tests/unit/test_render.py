@@ -305,6 +305,39 @@ def test_undeclared_variables(make_docx):
     assert tpl.get_undeclared_template_variables(context={"name": 1}) == {"items", "company"}
 
 
+def test_undeclared_variables_nested(make_docx):
+    path = make_docx(
+        [
+            "{{ foo.bar.baz }} {{ foo.bar }} {{ foo['Qux'] }}",
+            "{{ rows[i].x }} {{ name }}",
+            "{% for k, v in data.items() %}{{ v }}{% endfor %}",
+            "{% for it in items %}{{ it.price }}{% endfor %}",
+        ],
+        header="{{ company.name|upper }}",
+    )
+    tpl = DocxTemplate(path)
+    assert tpl.get_undeclared_template_variables(nested=True) == {
+        "foo.bar.baz", "foo.Qux", "rows", "i", "name", "data", "items", "company.name",
+    }
+    # plain names are unchanged without nested
+    assert tpl.get_undeclared_template_variables() == {
+        "foo", "rows", "i", "name", "data", "items", "company",
+    }
+
+
+def test_undeclared_variables_nested_with_context(make_docx):
+    class Company:
+        name = "ACME"
+
+    tpl = DocxTemplate(make_docx(["{{ foo.bar }} {{ foo['Qux'] }} {{ c.name }} {{ c.city }}"]))
+    context = {"foo": {"Qux": 1}, "c": Company()}
+    assert tpl.get_undeclared_template_variables(context=context, nested=True) == {
+        "foo.bar", "c.city",
+    }
+    context["foo"]["bar"] = 2
+    assert tpl.get_undeclared_template_variables(context=context, nested=True) == {"c.city"}
+
+
 def test_public_api_and_alias():
     assert docform.Template is docform.DocxTemplate
     assert docform.docx.Template is docform.docx.DocxTemplate
