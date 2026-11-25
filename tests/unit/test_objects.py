@@ -65,6 +65,37 @@ def test_richtext_link(make_docx):
     assert "w:hyperlink" in doc.paragraphs[0]._p.xml
 
 
+def test_empty_richtext_is_falsy():
+    assert not RichText()
+    assert not RichText("", color="0000FF")
+    empty_run = RichText()
+    empty_run.add("", bold=True)
+    assert not empty_run
+    assert RichText("x")
+    assert RichText(" ")
+    assert not RichTextParagraph()
+    assert not RichTextParagraph(RichText(""))
+    assert RichTextParagraph("x")
+
+
+def test_empty_richtext_paragraph_still_renders_a_paragraph():
+    assert RichTextParagraph(RichText("")).xml == "<w:p></w:p>"
+
+
+def test_if_skips_empty_richtext(make_docx):
+    text = (
+        "{% for e in es %}{{ e.place }}"
+        "{%r if e.habitat %}; {{r e.habitat }}{%r endif %}.{% endfor %}"
+    )
+    tpl = DocxTemplate(make_docx([text]))
+    entries = [
+        {"place": "Boston", "habitat": RichText("forest", color="0000FF")},
+        {"place": "Honolulu", "habitat": RichText("", color="0000FF")},
+    ]
+    tpl.render({"es": entries})
+    assert body_text(saved(tpl)) == ["Boston; forest.Honolulu."]
+
+
 def test_richtext_paragraph(make_docx):
     rp = RichTextParagraph()
     rp.add(RichText("first", bold=True))
