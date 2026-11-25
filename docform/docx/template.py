@@ -267,6 +267,28 @@ class DocxTemplate(object):
         with open(filename, "w", encoding="utf-8") as fh:
             fh.write(self.get_xml())
 
+    @staticmethod
+    def _keep_section_break(m):
+        """Replace a {%p %} paragraph by its tag, keeping a section break.
+
+        A paragraph that ends a section holds the section's settings (page
+        size, margins, orientation) in w:pPr/w:sectPr. Dropping it with the
+        tag would merge the section into the next one. Keep an empty
+        paragraph with those properties outside the block: before an
+        opening tag and after a closing one, so it's never skipped or
+        repeated by the tag.
+        """
+        tag = m.group(1) + " " + m.group(2)
+        ppr = re.search(
+            r"<w:pPr>(?:(?!</w:pPr>).)*<w:sectPr[ >/].*?</w:pPr>", m.group(0), flags=re.DOTALL
+        )
+        if ppr is None:
+            return tag
+        section_break = "<w:p>" + ppr.group(0) + "</w:p>"
+        if re.match(r"-?\s*end", m.group(2)):
+            return tag + section_break
+        return section_break + tag
+
     def patch_xml(self, src_xml):
         """Make a lots of cleaning to have a raw xml understandable by jinja2 :
         strip all unnecessary xml tags, manage table cell background color and colspan,
@@ -404,7 +426,10 @@ class DocxTemplate(object):
                 r"<w:%(y)s[ >](?:(?!<w:%(y)s[ >]).)*({%%|{{)%(y)s ((?:(?!%%}|}}).)*(?:%%}|}})).*?</w:%(y)s>"
                 % {"y": y}
             )
-            src_xml = re.sub(pat, r"\1 \2", src_xml, flags=re.DOTALL)
+            if y == "p":
+                src_xml = re.sub(pat, self._keep_section_break, src_xml, flags=re.DOTALL)
+            else:
+                src_xml = re.sub(pat, r"\1 \2", src_xml, flags=re.DOTALL)
 
         for y in ["tr", "tc", "p"]:
             # same thing, but for {#y xxx #} (but not where y == 'r', since that

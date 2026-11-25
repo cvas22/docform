@@ -265,6 +265,42 @@ def test_hm_keeps_tcpr_in_schema_order(tmp_path):
         assert names == sorted(names, key=TC_PR_ORDER.index)
 
 
+@pytest.mark.parametrize(
+    "paragraphs, break_at, context",
+    [
+        (["{%p if show %}", "{{ text }}", "{%p endif %}"], 0, {"show": True}),
+        (["{%p if show %}", "{{ text }}", "{%p endif %}"], 0, {"show": False}),
+        (["{%p if show %}", "{{ text }}", "{%p endif %}"], 2, {"show": True}),
+        (["{%p if show %}", "{{ text }}", "{%p endif %}"], 2, {"show": False}),
+        (["{%p for x in xs %}", "{{ x }}", "{%p endfor %}"], 0, {"xs": [1, 2, 3]}),
+        (["{%p for x in xs %}", "{{ x }}", "{%p endfor %}"], 2, {"xs": [1, 2, 3]}),
+    ],
+    ids=["if-shown", "if-hidden", "endif-shown", "endif-hidden", "for", "endfor"],
+)
+def test_section_break_on_paragraph_tag_is_kept(tmp_path, paragraphs, break_at, context):
+    from docx.shared import Inches
+
+    doc = Document()
+    for index, text in enumerate(paragraphs):
+        if index == break_at:
+            # python-docx puts the section break in a new last paragraph
+            doc.add_section()
+            doc.paragraphs[-1].text = text
+        else:
+            doc.add_paragraph(text)
+    doc.sections[0].left_margin = Inches(2)
+    path = tmp_path / "sections.docx"
+    doc.save(str(path))
+
+    tpl = DocxTemplate(str(path))
+    tpl.render(dict(context, text="body"))
+    out = saved(tpl)
+    assert len(out.sections) == 2
+    assert out.sections[0].left_margin == Inches(2)
+    assert out.sections[1].left_margin != Inches(2)
+    assert not any("{%" in text for text in body_text(out))
+
+
 def test_header_footer_and_properties(make_docx):
     path = make_docx(["body {{ x }}"], header="head {{ x }}", footer="foot {{ x }}", title="Report {{ x }}")
     tpl = DocxTemplate(path)
