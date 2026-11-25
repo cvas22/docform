@@ -198,6 +198,73 @@ def test_colspan_sets_gridspan(make_docx):
     assert 'w:gridSpan w:val="3"' in xml
 
 
+TC_PR_ORDER = ["tcW", "gridSpan", "vMerge", "tcBorders", "shd", "vAlign"]
+
+
+def _style_cell(cell):
+    # Borders and vertical alignment, as Word writes them for a formatted cell.
+    tc_pr = cell._tc.get_or_add_tcPr()
+    borders = OxmlElement("w:tcBorders")
+    top = OxmlElement("w:top")
+    top.set(qn("w:val"), "single")
+    borders.append(top)
+    tc_pr.append(borders)
+    v_align = OxmlElement("w:vAlign")
+    v_align.set(qn("w:val"), "center")
+    tc_pr.append(v_align)
+
+
+def _tc_pr_orders(doc):
+    orders = []
+    for tc_pr in doc.element.body.iter(qn("w:tcPr")):
+        names = [etree.QName(child).localname for child in tc_pr]
+        orders.append([n for n in names if n in TC_PR_ORDER])
+    return orders
+
+
+@pytest.mark.parametrize(
+    "cells, context",
+    [
+        (["{%tr for x in xs %}", "{% vm %}{{ x }}", "{%tr endfor %}"], {"xs": [1, 2]}),
+        (["{% cellbg color %}hot"], {"color": "FF0000"}),
+        (["{% colspan n %}wide"], {"n": 2}),
+    ],
+    ids=["vm", "cellbg", "colspan"],
+)
+def test_cell_tags_keep_tcpr_in_schema_order(tmp_path, cells, context):
+    doc = Document()
+    table = doc.add_table(rows=len(cells), cols=2)
+    for row, text in enumerate(cells):
+        table.cell(row, 0).text = text
+        _style_cell(table.cell(row, 0))
+    path = tmp_path / "styled.docx"
+    doc.save(str(path))
+
+    tpl = DocxTemplate(str(path))
+    tpl.render(context)
+    orders = _tc_pr_orders(saved(tpl))
+    assert orders
+    for names in orders:
+        assert names == sorted(names, key=TC_PR_ORDER.index)
+
+
+def test_hm_keeps_tcpr_in_schema_order(tmp_path):
+    doc = Document()
+    table = doc.add_table(rows=1, cols=3)
+    for col, text in enumerate(["{%tc for x in xs %}", "{% hm %}{{ x }}", "{%tc endfor %}"]):
+        table.cell(0, col).text = text
+        _style_cell(table.cell(0, col))
+    path = tmp_path / "hm.docx"
+    doc.save(str(path))
+
+    tpl = DocxTemplate(str(path))
+    tpl.render({"xs": [1, 2, 3]})
+    out = saved(tpl)
+    assert 'w:gridSpan w:val="3"' in out.tables[0]._tbl.xml
+    for names in _tc_pr_orders(out):
+        assert names == sorted(names, key=TC_PR_ORDER.index)
+
+
 def test_header_footer_and_properties(make_docx):
     path = make_docx(["body {{ x }}"], header="head {{ x }}", footer="foot {{ x }}", title="Report {{ x }}")
     tpl = DocxTemplate(path)

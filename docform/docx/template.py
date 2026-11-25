@@ -823,6 +823,7 @@ class DocxTemplate(object):
 
         # fix tables if needed
         tree = self.fix_tables(xml_src)
+        self.fix_cell_properties(tree)
 
         # fix docPr ID's
         self.fix_docpr_ids(tree)
@@ -952,6 +953,45 @@ class DocxTemplate(object):
                     c.set(ns + "w", str(int(float(c.get(ns + "w")) + extra_space)))
 
         return tree
+
+    # Children of w:tcPr in the order the schema (CT_TcPr) requires.
+    TC_PR_ORDER = {
+        name: index
+        for index, name in enumerate(
+            (
+                "cnfStyle", "tcW", "gridSpan", "hMerge", "vMerge", "tcBorders", "shd",
+                "noWrap", "tcMar", "textDirection", "tcFitText", "vAlign", "hideMark",
+                "headers", "cellIns", "cellDel", "cellMerge", "tcPrChange",
+            )
+        )
+    }
+
+    def fix_cell_properties(self, tree):
+        """Put w:tcPr children back in schema order.
+
+        The vm, hm, colspan and cellbg tags insert vMerge, gridSpan and shd
+        at a fixed spot in the cell properties, which is out of order when
+        the cell also has borders, alignment and so on. Word refuses to open
+        such a file. An element the schema list doesn't know stays right
+        after the element it followed.
+        """
+        ns = "{" + docx.oxml.ns.nsmap["w"] + "}"
+        for tc_pr in tree.iter(ns + "tcPr"):
+            children = list(tc_pr)
+            if len(children) < 2:
+                continue
+            keys = []
+            last = -1
+            for child in children:
+                tag = child.tag if isinstance(child.tag, str) else ""
+                if tag.startswith(ns):
+                    last = self.TC_PR_ORDER.get(tag[len(ns):], last)
+                keys.append(last)
+            if keys == sorted(keys):
+                continue
+            ordered = [c for _, c in sorted(zip(keys, children), key=lambda kc: kc[0])]
+            for child in ordered:
+                tc_pr.append(child)
 
     def fix_docpr_ids(self, tree):
         # some Ids may have some collisions : so renumbering all of them :
