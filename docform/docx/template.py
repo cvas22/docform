@@ -663,7 +663,10 @@ class DocxTemplate(object):
     def resolve_listing(self, xml):
 
         def resolve_text(run_properties, paragraph_properties, m):
-            xml = m.group(0).replace(
+            # A value with Windows (\r\n) or old Mac (\r) line endings gets the
+            # same line breaks as one with \n.
+            xml = m.group(0).replace("\r\n", "\n").replace("\r", "\n")
+            xml = xml.replace(
                 "\t",
                 "</w:t></w:r>"
                 "<w:r>%s<w:tab/></w:r>"

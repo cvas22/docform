@@ -690,3 +690,20 @@ def test_added_columns_update_cell_widths(make_docx):
     assert len(grid) == 6
     assert cells == [grid]
     assert abs(sum(grid) - sum(total)) <= len(grid)
+
+
+@pytest.mark.parametrize("value", ["a\nb", "a\r\nb", "a\rb"], ids=["lf", "crlf", "cr"])
+def test_line_endings_become_line_breaks(make_docx, value):
+    tpl = DocxTemplate(make_docx(["{{ v }}"]))
+    tpl.render({"v": value})
+    p = saved(tpl).paragraphs[0]
+    assert p._p.xml.count("<w:br/>") == 1
+    assert p.text == "a\nb"
+
+
+def test_richtext_carriage_return_becomes_line_break(make_docx):
+    from docform import RichText
+
+    tpl = DocxTemplate(make_docx(["{{r rt }}"]))
+    tpl.render({"rt": RichText("a\r\nb\rc", bold=True)})
+    assert saved(tpl).paragraphs[0]._p.xml.count("<w:br/>") == 2
