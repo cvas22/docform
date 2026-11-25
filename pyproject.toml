@@ -5,7 +5,7 @@ description = "Fill document templates with data using Jinja2"
 authors = [{name="Srinivas Chippagiri", email="cvas22@gmail.com"}]
 maintainers = [{name="Srinivas Chippagiri", email="cvas22@gmail.com"}]
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 license = {text="LGPL-2.1-only"}
 classifiers=[
     "Intended Audience :: Developers",
@@ -15,9 +15,6 @@ classifiers=[
     "Topic :: Office/Business",
     "Topic :: Text Processing :: Markup",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -57,7 +54,7 @@ addopts = "-ra"
 
 [tool.mypy]
 pretty = true
-python_version = "3.9"
+python_version = "3.10"
 check_untyped_defs = true
 warn_unused_ignores = true
 exclude = ["docs", "build"]
