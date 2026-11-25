@@ -7,6 +7,10 @@ try:
 except ImportError:
     # cgi.escape is deprecated in python 3.7
     from cgi import escape
+import re
+
+# A w:t element with at least one character in it.
+_HAS_TEXT = re.compile(r"<w:t(?:\s[^>]*)?>[^<]")
 
 
 class RichText(object):
@@ -121,6 +125,10 @@ class RichText(object):
             )
         self.xml += xml
 
+    def __bool__(self):
+        """False when there's no text, so {%r if rt %} skips an empty RichText."""
+        return bool(_HAS_TEXT.search(self.xml))
+
     def __unicode__(self):
         return self.xml
 
@@ -140,7 +148,8 @@ class RichTextParagraph(object):
 
     def __init__(self, text=None, **text_prop):
         self.xml = ""
-        if text:
+        # An empty RichText is falsy but still makes an (empty) paragraph.
+        if isinstance(text, RichText) or text:
             self.add(text, **text_prop)
 
     def add(
@@ -168,6 +177,10 @@ class RichTextParagraph(object):
         xml += text.xml
         xml += "</w:p>"
         self.xml += xml
+
+    def __bool__(self):
+        """False when none of the paragraphs has any text."""
+        return bool(_HAS_TEXT.search(self.xml))
 
     def __unicode__(self):
         return self.xml
