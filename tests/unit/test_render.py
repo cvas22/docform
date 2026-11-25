@@ -653,3 +653,40 @@ def test_render_async_raises_render_errors(make_docx):
     tpl = DocxTemplate(make_docx(["{{ broken "]))
     with pytest.raises(TemplateSyntaxError):
         asyncio.run(tpl.render_async({}))
+
+
+def _grid_and_cell_widths(table):
+    grid = [int(w) for w in table._tbl.xpath("./w:tblGrid/w:gridCol/@w:w")]
+    cells = [[int(w) for w in tr.xpath("./w:tc/w:tcPr/w:tcW/@w:w")] for tr in table._tbl.tr_lst]
+    return grid, cells
+
+
+def test_nested_table_does_not_change_outer_grid(tmp_path):
+    doc = Document()
+    outer = doc.add_table(rows=1, cols=2)
+    outer.cell(0, 0).text = "{{ name }}"
+    outer.cell(0, 1).add_table(rows=1, cols=4)
+    path = tmp_path / "nested.docx"
+    doc.save(str(path))
+    before, _ = _grid_and_cell_widths(Document(str(path)).tables[0])
+
+    tpl = DocxTemplate(str(path))
+    tpl.render({"name": "x"})
+    after, _ = _grid_and_cell_widths(saved(tpl).tables[0])
+    assert len(after) == 2
+    assert after == before
+
+
+def test_added_columns_update_cell_widths(make_docx):
+    table = [["first", "{%tc for c in cols %}", "{{ c }}", "{%tc endfor %}"]]
+    path = make_docx(table=table)
+    total, _ = _grid_and_cell_widths(Document(str(path)).tables[0])
+
+    tpl = DocxTemplate(str(path))
+    tpl.render({"cols": ["a", "b", "c", "d", "e"]})
+    out = saved(tpl).tables[0]
+    assert table_rows(saved(tpl)) == [["first", "a", "b", "c", "d", "e"]]
+    grid, cells = _grid_and_cell_widths(out)
+    assert len(grid) == 6
+    assert cells == [grid]
+    assert abs(sum(grid) - sum(total)) <= len(grid)

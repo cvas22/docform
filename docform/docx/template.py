@@ -896,10 +896,16 @@ class DocxTemplate(object):
         # walk trough xml and find table
         for t in tree.iter(ns + "tbl"):
             tblGrid = t.find(ns + "tblGrid")
+            if tblGrid is None:
+                continue
             columns = tblGrid.findall(ns + "gridCol")
+            # Only this table's own rows: a nested table is fixed on its own
+            # and its cells must not change this table's column count.
+            rows = t.findall(ns + "tr")
+            resized = False
             to_add = 0
             # walk trough all rows and try to find if there is higher cell count
-            for r in t.iter(ns + "tr"):
+            for r in rows:
                 cells = r.findall(ns + "tc")
                 if (len(columns) + to_add) < len(cells):
                     to_add = len(cells) - len(columns)
@@ -929,6 +935,7 @@ class DocxTemplate(object):
                         etree.SubElement(
                             tblGrid, ns + "gridCol", {ns + "w": str(int(new_average))}
                         )
+                    resized = True
 
             # Refetch columns after columns addition.
             columns = tblGrid.findall(ns + "gridCol")
@@ -946,7 +953,7 @@ class DocxTemplate(object):
                 return total + 1
 
             # Calculate max of table cells to compare with `gridCol`.
-            for r in t.iter(ns + "tr"):
+            for r in rows:
                 cells = r.findall(ns + "tc")
                 cells_len = functools.reduce(get_cell_len, cells, 0)
                 cells_len_max = max(cells_len_max, cells_len)
@@ -976,8 +983,44 @@ class DocxTemplate(object):
 
                 for c in columns_left:
                     c.set(ns + "w", str(int(float(c.get(ns + "w")) + extra_space)))
+                resized = True
+
+            if resized:
+                self._sync_cell_widths(rows, tblGrid, ns)
 
         return tree
+
+    @staticmethod
+    def _sync_cell_widths(rows, tbl_grid, ns):
+        """Set each cell's w:tcW to the width of the grid columns it spans.
+
+        Word uses w:tcW over w:tblGrid, so after the grid is rescaled the
+        cells would keep their old widths. Only widths in twips (dxa) are
+        changed; percentage and auto widths still follow the grid.
+        """
+        widths = []
+        for col in tbl_grid.findall(ns + "gridCol"):
+            try:
+                widths.append(int(float(col.get(ns + "w"))))
+            except (TypeError, ValueError):
+                return
+        for row in rows:
+            start = 0
+            for cell in row.findall(ns + "tc"):
+                tc_pr = cell.find(ns + "tcPr")
+                span = 1
+                grid_span = None if tc_pr is None else tc_pr.find(ns + "gridSpan")
+                if grid_span is not None:
+                    try:
+                        span = int(grid_span.get(ns + "val"))
+                    except (TypeError, ValueError):
+                        span = 1
+                tc_w = None if tc_pr is None else tc_pr.find(ns + "tcW")
+                fits = start + span <= len(widths)
+                if fits and tc_w is not None and tc_w.get(ns + "type", "dxa") == "dxa":
+                    tc_w.set(ns + "w", str(sum(widths[start:start + span])))
+                    tc_w.set(ns + "type", "dxa")
+                start += span
 
     # Children of w:tcPr in the order the schema (CT_TcPr) requires.
     TC_PR_ORDER = {
