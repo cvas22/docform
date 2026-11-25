@@ -763,3 +763,14 @@ def test_text_box_in_loop_gets_unique_ids(tmp_path):
         assert len(set(values)) == 3, (path_, values)
     # the first copy keeps the ids from the template
     assert etree._Element.xpath(body, "(.//v:shape)[1]/@o:spid", namespaces=ns) == ["_x0000_s1026"]
+
+
+def test_render_swaps_in_one_document_root(make_docx):
+    tpl = DocxTemplate(make_docx(["{{ a }}", "{{ b }}"], table=[["{{ c }}"]]))
+    tpl.render({"a": "one", "b": "two", "c": "three"})
+    # the document and its part must share the rendered root, or save()
+    # and python-docx reads would see different trees
+    assert tpl.docx.element is tpl.docx.part.element
+    assert [p.text for p in tpl.docx.paragraphs] == ["one", "two"]
+    assert table_rows(tpl.docx) == [["three"]]
+    assert body_text(saved(tpl)) == ["one", "two"]

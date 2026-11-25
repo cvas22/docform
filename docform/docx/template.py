@@ -724,8 +724,20 @@ class DocxTemplate(object):
 
     def map_tree(self, tree):
         root = self.docx._element
-        body = root.body
-        root.replace(body, tree)
+        # lxml takes quadratic time to move a large subtree from one document
+        # to another, so replacing the body element (or moving its children)
+        # dominated big renders (#74). Splice the rendered body into the
+        # document's XML and parse it once instead.
+        xml = etree.tostring(root, encoding="unicode")
+        start = xml.find("<w:body")
+        end = xml.rfind("</w:body>")
+        if start < 0 or end < 0:
+            root.replace(root.body, tree)
+        else:
+            body_xml = etree.tostring(tree, encoding="unicode")
+            new_root = docx.oxml.parse_xml(xml[:start] + body_xml + xml[end + len("</w:body>"):])
+            self.docx._element = new_root
+            self.docx._part._element = new_root
         # python-docx caches its body wrapper, drop it so reads after
         # render() see the new body instead of the template one.
         if hasattr(self.docx, "_Document__body"):
