@@ -707,3 +707,59 @@ def test_richtext_carriage_return_becomes_line_break(make_docx):
     tpl = DocxTemplate(make_docx(["{{r rt }}"]))
     tpl.render({"rt": RichText("a\r\nb\rc", bold=True)})
     assert saved(tpl).paragraphs[0]._p.xml.count("<w:br/>") == 2
+
+
+TEXT_BOX_XML = (
+    '<w:r xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+    ' xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"'
+    ' xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"'
+    ' xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing"'
+    ' xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"'
+    ' xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"'
+    ' xmlns:v="urn:schemas-microsoft-com:vml"'
+    ' xmlns:o="urn:schemas-microsoft-com:office:office">'
+    '<mc:AlternateContent><mc:Choice Requires="wps"><w:drawing>'
+    '<wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="1"'
+    ' behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1"'
+    ' wp14:anchorId="1A2B3C4D" wp14:editId="5E6F7A8B">'
+    '<wp:simplePos x="0" y="0"/>'
+    '<wp:positionH relativeFrom="column"><wp:posOffset>0</wp:posOffset></wp:positionH>'
+    '<wp:positionV relativeFrom="paragraph"><wp:posOffset>0</wp:posOffset></wp:positionV>'
+    '<wp:extent cx="914400" cy="457200"/><wp:effectExtent l="0" t="0" r="0" b="0"/>'
+    '<wp:wrapNone/><wp:docPr id="7" name="Text Box 7"/><wp:cNvGraphicFramePr/>'
+    '<a:graphic><a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">'
+    '<wps:wsp><wps:cNvSpPr txBox="1"/><wps:spPr/>'
+    '<wps:txbx><w:txbxContent><w:p><w:r><w:t>box</w:t></w:r></w:p></w:txbxContent></wps:txbx>'
+    '<wps:bodyPr/></wps:wsp></a:graphicData></a:graphic></wp:anchor>'
+    '</w:drawing></mc:Choice><mc:Fallback><w:pict>'
+    '<v:shape id="Text Box 7" o:spid="_x0000_s1026" type="#_x0000_t202">'
+    '<v:textbox><w:txbxContent><w:p><w:r><w:t>box</w:t></w:r></w:p></w:txbxContent></v:textbox>'
+    '</v:shape></w:pict></mc:Fallback></mc:AlternateContent></w:r>'
+)
+
+
+def test_text_box_in_loop_gets_unique_ids(tmp_path):
+    from docx.oxml import parse_xml
+
+    doc = Document()
+    doc.add_paragraph("{%p for x in xs %}")
+    doc.add_paragraph()._p.append(parse_xml(TEXT_BOX_XML))
+    doc.add_paragraph("{%p endfor %}")
+    path = tmp_path / "textbox.docx"
+    doc.save(str(path))
+
+    tpl = DocxTemplate(str(path))
+    tpl.render({"xs": [1, 2, 3]})
+    body = saved(tpl).element.body
+    ns = {
+        "wp": "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
+        "wp14": "http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing",
+        "v": "urn:schemas-microsoft-com:vml",
+        "o": "urn:schemas-microsoft-com:office:office",
+    }
+    for path_ in (".//wp:anchor/@wp14:anchorId", ".//v:shape/@id", ".//v:shape/@o:spid", ".//wp:docPr/@id"):
+        values = etree._Element.xpath(body, path_, namespaces=ns)
+        assert len(values) == 3, path_
+        assert len(set(values)) == 3, (path_, values)
+    # the first copy keeps the ids from the template
+    assert etree._Element.xpath(body, "(.//v:shape)[1]/@o:spid", namespaces=ns) == ["_x0000_s1026"]

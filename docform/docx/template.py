@@ -855,6 +855,7 @@ class DocxTemplate(object):
 
         # fix docPr ID's
         self.fix_docpr_ids(tree)
+        self.fix_shape_ids(tree)
 
         # Replace body xml tree
         self.drop_duplicate_bookmarks(tree)
@@ -1069,6 +1070,65 @@ class DocxTemplate(object):
         for elt in tree.xpath("//wp:docPr", namespaces=docx.oxml.ns.nsmap):
             self.docx_ids_index += 1
             elt.attrib["id"] = str(self.docx_ids_index)
+
+    SHAPE_ANCHOR_IDS = (
+        "{http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing}anchorId",
+        "{http://schemas.microsoft.com/office/word/2010/wordml}anchorId",
+    )
+    VML_SHAPE = "{urn:schemas-microsoft-com:vml}shape"
+    VML_SPID = "{urn:schemas-microsoft-com:office:office}spid"
+    OLE_OBJECT = "{urn:schemas-microsoft-com:office:office}OLEObject"
+
+    def fix_shape_ids(self, tree):
+        """Give copies of a shape or text box their own ids.
+
+        A loop repeats a shape's anchorId and its VML fallback's id and
+        o:spid, and Word reports such a document as corrupted. The first
+        copy keeps its ids, later copies get new unique ones.
+        """
+        elements = [el for el in tree.iter() if isinstance(el.tag, str)]
+
+        def dedupe(items, get, put, make):
+            used = {get(el) for el in items}
+            seen = set()
+            index = 1
+            for el in items:
+                value = get(el)
+                if value not in seen:
+                    seen.add(value)
+                    continue
+                while make(index) in used:
+                    index += 1
+                new = make(index)
+                used.add(new)
+                put(el, value, new)
+
+        for attr in self.SHAPE_ANCHOR_IDS:
+            dedupe(
+                [el for el in elements if el.get(attr) is not None],
+                lambda el, a=attr: el.get(a).upper(),
+                lambda el, old, new, a=attr: el.set(a, new),
+                lambda index: "%08X" % (0x10000000 + index),
+            )
+
+        shapes = [
+            el for el in elements if el.tag == self.VML_SHAPE and el.get("id") is not None
+        ]
+
+        def set_shape_id(shape, old, new):
+            shape.set("id", new)
+            parent = shape.getparent()
+            for ole in [] if parent is None else parent.iter(self.OLE_OBJECT):
+                if ole.get("ShapeID") == old:
+                    ole.set("ShapeID", new)
+
+        dedupe(shapes, lambda el: el.get("id"), set_shape_id, lambda i: "_x0000_s%d" % (3000 + i))
+        dedupe(
+            [el for el in shapes if el.get(self.VML_SPID) is not None],
+            lambda el: el.get(self.VML_SPID),
+            lambda el, old, new: el.set(self.VML_SPID, new),
+            lambda index: "_x0000_s%d" % (4000 + index),
+        )
 
     def new_subdoc(self, docpath=None) -> Subdoc:
         try:
