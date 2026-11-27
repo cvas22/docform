@@ -66,6 +66,9 @@ ignore_missing_imports = true
 [tool.pdm]
 version = {source="file", path="docform/__init__.py"}
 
+[tool.pdm.build]
+source-includes = ["tests/", "examples/multilevel_list/"]
+
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"

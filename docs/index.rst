@@ -343,6 +343,28 @@ With a plain ``{{ mysubdoc }}`` the paragraphs end up inside the text of the par
 and, if the paragraph also has other content such as a bookmark or formatted text, the generated document may be corrupted and refused by Word.
 The same goes for subdocs inserted in a loop: put the tag in its own ``{%p for ... %}`` block and use ``{{p item }}`` inside it.
 
+.. rubric:: Multilevel numbered lists
+
+In Word, create one multilevel list in the template. For example, use decimal
+numbers at level 1, lower-case letters at level 2, and lower-case Roman numerals
+at level 3. Set the second level to restart after level 1 and the third level to
+restart after level 2. Apply that list directly to the paragraph whose only
+text is the tag ``{{p items }}``.
+
+Read the numbered paragraph's list ID (``numId``) and use it for every generated
+paragraph. Set each paragraph's zero-based list level (``ilvl``) in the subdoc.
+With separate numbering IDs for the levels, Word keeps separate counters and
+the child numbering can continue under a new parent.
+
+``pip install "docform[subdoc]"`` installs the dependencies for this example.
+Use the :download:`example template <../examples/multilevel_list/template.docx>`
+and run the :download:`render script <../examples/multilevel_list/render.py>`.
+Open the output in Word to see the numbering restart as
+``1., a., b., i., ii., 2., a., i.``.
+
+.. literalinclude:: ../examples/multilevel_list/render.py
+   :language: python
+
 .. _Escaping:
 
 Escaping
